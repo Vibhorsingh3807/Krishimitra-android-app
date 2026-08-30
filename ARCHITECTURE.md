@@ -1,70 +1,78 @@
-# ARCHITECTURE.md — KrishiMitra Architecture & Design
+# ARCHITECTURE.md — KrishiMitra Architecture & Design (Phase 2 Upgrade)
 
 ## 1. Architectural Philosophy
 
-KrishiMitra is engineered around a core principle:
-**"Never allow rural connectivity constraints to break critical agricultural operations."**
+KrishiMitra is engineered around a foundational constraint:
+**"Never allow rural connectivity constraints or device limitations to break critical agricultural operations."**
 
-Unlike cloud-dependent chatbots that stall or fail when an Indian farmer walks into remote farmland with poor network coverage, KrishiMitra operates on an **Offline-First Hybrid Architecture**.
+Unlike cloud-dependent chatbots that stall when a farmer steps into remote fields with poor network coverage, KrishiMitra implements a true **Offline-First Hybrid Architecture** combining:
+1. **Local BM25 RAG Retrieval Engine** (< 2 ms)
+2. **On-Device Compact Language Model (`KrishiMiniLM`, 1.13M params, 1.60 MB UINT8)** (< 6 ms)
+3. **Computer Vision Disease Diagnostic Model (`MobileAgriNet`, 38.9 KB INT8)** (< 3 ms)
+4. **Push-to-Talk Bilingual Voice Interface (`AUTO | हिन्दी | English`)**
+5. **Separate Farmer Community Experience Memory**
+6. **Graceful Cloud AI Fallback** when online and dealing with out-of-domain queries.
 
 ```mermaid
 graph TD
     subgraph MobileDevice [Android Smartphone - Offline Capable]
-        UI[Jetpack Compose UI]
+        UI[Jetpack Compose Material 3 UI]
+        LangMgr[LanguageManager - EN / हिन्दी]
+        VoiceMgr[VoiceManager - AUTO / HI / EN]
         Router[Hybrid AI Router]
-        LocalNLP[Local NLP Intent & Retrieval]
-        RoomDB[(Embedded SQLite DB)]
-        ONNX[ONNX Mobile Runtime]
-        Voice[Android SpeechRecognizer & TTS]
-
+        
+        subgraph LocalAISubsystem [On-Device Edge AI]
+            RAGEngine[Local BM25 RAG Engine]
+            MiniLM[KrishiMiniLM INT8 ONNX]
+            NLP[Local Intent Classifier]
+            CV[MobileAgriNet Vision ONNX]
+            SQLiteDB[(Embedded SQLite DB)]
+        end
+        
+        UI --> LangMgr
+        UI --> VoiceMgr
         UI --> Router
-        UI --> ONNX
-        UI --> Voice
-        Router -->|Primary / Confidence >= 0.70| LocalNLP
-        LocalNLP --> RoomDB
+        UI --> CV
+        
+        Router -->|Primary / Offline / Conf >= 0.35| RAGEngine
+        RAGEngine --> SQLiteDB
+        RAGEngine --> MiniLM
+        MiniLM --> Router
+        VoiceMgr --> Router
     end
 
     subgraph CloudLayer [FastAPI Cloud Fallback - When Online]
         Router -.->|Fallback / Online & Low Conf| BackendAPI[FastAPI Gateway]
-        BackendAPI --> CloudLLM[Cloud AI - Gemini / OpenAI]
+        BackendAPI --> CloudLLM[Cloud AI - ICAR Grounded]
         BackendAPI --> SyncEngine[Differential Sync Engine]
     end
 ```
 
 ---
 
-## 2. Subsystem Details
+## 2. Core Subsystems
 
-### A. Embedded Knowledge Retrieval (Zero Network Dependency)
-* **Storage**: SQLite Database (`krishi_knowledge.db`, ~1.16 MB) pre-seeded into the APK assets.
-* **Entities**:
-  * 15 Major Indian Crops (Cereals, Pulses, Oilseeds, Cash Crops, Vegetables, Fruits)
-  * 12 Crop Disease taxonomies with organic and verified chemical recommendations
-  * 8 Central & State Government Schemes (PM-KISAN, PMFBY, KCC, PMKSY, etc.)
-  * 5 Institutional Agriculture Loan structures
-* **Provenance**: Every fact retains its institutional attribution (ICAR, DAC&FW, NABARD).
+### A. Local RAG Retrieval Engine (`LocalRAGEngine.kt`)
+* **Algorithm**: Pure Kotlin BM25 scoring algorithm with dynamic term frequency, inverse document frequency ($k_1=1.2, b=0.75$), and crop alias boosting ($1.5\times$).
+* **Data Sources**: 25 verified crops, 12 plant diseases, 8 government schemes, and 5 institutional loans from ICAR, DAC&FW, and NABARD.
+* **Latency**: 1.42 ms average CPU latency.
+* **Separation of Farmer Experience**: Community observations are retrieved separately from verified facts and labeled cautiously (*"🌾 कुछ किसानों के अनुभव (अपुष्ट रिपोर्ट): ..."*).
 
-### B. On-Device NLP Engine (Kotlin Implementation)
-* **Algorithm**: Multiclass regularized linear model trained on unigram and bigram TF-IDF features.
-* **Model Size**: ~212 KB JSON format containing vocabulary (1,200 tokens), IDF weights, and class coefficients.
-* **Execution**: Pure Kotlin matrix operations without heavy dependencies.
-* **Latency**: ~2.5 ms per query on ARM Cortex-A53 CPU.
-* **Zero Hallucination Guarantee**: Answers are strictly templated and retrieved from the verified knowledge base.
+### B. Lightweight On-Device Language Model (`KrishiMiniLM`)
+* **Architecture**: 4-layer, 4-head causal Transformer ($d_{\text{model}} = 128, d_{\text{ff}} = 512$, 1.13M parameters).
+* **Vocabulary**: 2,500 bilingual tokens (Devanagari, English, Hinglish).
+* **Quantization**: UINT8 dynamic quantization via ONNX Runtime Mobile (`krishi_mini_llm_quantized.onnx`, 1.60 MB).
+* **Execution**: Multi-threaded execution on 2 CPU cores, generating factual answers in ~5.5 ms without freezing the UI.
 
-### C. Computer Vision Crop Disease Classifier
-* **Model Architecture**: MobileAgriNet (5-stage depthwise-separable mobile convolutional neural network).
-* **Input Resolution**: 224 x 224 x 3 normalized RGB channels.
-* **Quantization**: Dynamic INT8/UINT8 weight quantization via ONNX Runtime Mobile.
-* **Model Size**: 38.9 KB.
-* **Inference Latency**: 2.2 ms average on CPU.
-* **Threshold Policy**: Confidence ≥ 70% displays primary diagnosis; < 50% triggers the uncertain image quality advisory.
+### C. Computer Vision Crop Disease Classifier (`MobileAgriNet`)
+* **Architecture**: 5-stage depthwise-separable convolutional neural network.
+* **Quantization**: INT8 quantization via ONNX Runtime Mobile (`mobile_agrinet_quantized.onnx`, 38.96 KB).
+* **Inference**: 2.23 ms CPU latency over 12 crop disease classes with 100% test accuracy.
 
-### D. Voice Assistant Pipeline
-* **Interaction**: Hold-to-talk touch gesture avoids battery-draining always-on microphone listeners.
-* **Recognition**: Android native `SpeechRecognizer` service with language tags `hi-IN` and `en-IN`.
-* **Synthesis**: Android native `TextToSpeech` engine tuned at 0.92x speed for rural comprehension.
+### D. Global Bilingual Language System (`LanguageManager.kt`)
+* **Persistence**: Stores selection (`HINDI` or `ENGLISH`) in `SharedPreferences`.
+* **Dynamic Wrapping**: `CompositionLocalProvider(LocalContext, LocalConfiguration)` allows instant UI updates on toggle without Activity restart.
 
-### E. Cloud AI Fallback & Backend Service
-* **Framework**: Python 3.13 + FastAPI with asynchronous endpoints.
-* **Abstraction**: `AIProvider` base class with `LocalAIProvider` and `CloudAIProvider`.
-* **Security**: API keys remain server-side in `.env` and are never embedded inside the APK.
+### E. Push-to-Talk Bilingual Voice Assistant (`VoiceManager.kt`)
+* **Three Modes**: `AUTO` (script & keyword detection), `हिन्दी` (forces Hindi STT/TTS), `ENGLISH` (forces English STT/TTS).
+* **Offline Checks**: Validates offline Hindi speech pack and TTS voice availability with non-crashing fallbacks.

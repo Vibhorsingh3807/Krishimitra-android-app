@@ -136,3 +136,31 @@ data class DiseaseDiagnosisResult(
     val prevention: String,
     val source: String
 )
+
+data class FarmerExperience(
+    val id: String = java.util.UUID.randomUUID().toString(),
+    val cropId: String,
+    val cropName: String,
+    val state: String,
+    val district: String? = null,
+    val observation: String,
+    val observationHi: String? = null,
+    val observationEn: String? = null,
+    val language: String = "hi",
+    val createdAt: String = java.text.SimpleDateFormat("yyyy-MM-dd", java.util.Locale.getDefault()).format(java.util.Date())
+)
+
+data class RAGKnowledgeRecord(
+    val id: String,
+    val topic: String,
+    val cropId: String?,
+    val questionEn: String,
+    val questionHi: String,
+    val answerEn: String,
+    val answerHi: String,
+    val source: String,
+    val sourceUrl: String? = null,
+    val isVerified: Boolean = true,
+    val category: String = "VERIFIED_KNOWLEDGE" // "VERIFIED_KNOWLEDGE" or "FARMER_EXPERIENCE"
+)
+

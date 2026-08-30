@@ -72,6 +72,7 @@ fun CropGuideScreen(dbHelper: DatabaseHelper) {
 @Composable
 fun CropExpandableCard(crop: Crop) {
     var isExpanded by remember { mutableStateOf(false) }
+    val isHindi = androidx.compose.ui.platform.LocalConfiguration.current.locales[0].language == "hi"
 
     Card(
         modifier = Modifier
@@ -90,14 +91,14 @@ fun CropExpandableCard(crop: Crop) {
             ) {
                 Column {
                     Text(
-                        text = crop.nameHi,
+                        text = if (isHindi) crop.nameHi else crop.nameEn,
                         style = MaterialTheme.typography.titleLarge.copy(
                             fontWeight = FontWeight.Bold,
                             color = GreenPrimary
                         )
                     )
                     Text(
-                        text = "${crop.nameEn} (${crop.scientificName ?: ""})",
+                        text = if (isHindi) "${crop.nameEn} (${crop.scientificName ?: ""})" else "${crop.nameHi} (${crop.scientificName ?: ""})",
                         style = MaterialTheme.typography.bodySmall.copy(
                             color = TextSecondary,
                             fontSize = 12.sp
@@ -110,7 +111,7 @@ fun CropExpandableCard(crop: Crop) {
                     color = GreenPrimaryContainer.copy(alpha = 0.6f)
                 ) {
                     Text(
-                        text = crop.categoryHi ?: "फसल",
+                        text = if (isHindi) (crop.categoryHi ?: "फसल") else (crop.category ?: "Crop"),
                         modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp),
                         style = MaterialTheme.typography.labelSmall.copy(
                             color = GreenDark,
@@ -132,15 +133,15 @@ fun CropExpandableCard(crop: Crop) {
                 horizontalArrangement = Arrangement.SpaceBetween
             ) {
                 Column {
-                    Text(text = "बुवाई मौसम:", fontSize = 11.sp, color = TextSecondary)
-                    Text(text = crop.sowingSeasonHi ?: "", fontSize = 12.sp, fontWeight = FontWeight.SemiBold)
+                    Text(text = if (isHindi) "बुवाई मौसम:" else "Sowing Season:", fontSize = 11.sp, color = TextSecondary)
+                    Text(text = if (isHindi) (crop.sowingSeasonHi ?: "") else (crop.sowingSeason ?: ""), fontSize = 12.sp, fontWeight = FontWeight.SemiBold)
                 }
                 Column {
-                    Text(text = "मिट्टी पीएच:", fontSize = 11.sp, color = TextSecondary)
+                    Text(text = if (isHindi) "मिट्टी पीएच:" else "Soil pH:", fontSize = 11.sp, color = TextSecondary)
                     Text(text = crop.soilPh ?: "6.0 - 7.5", fontSize = 12.sp, fontWeight = FontWeight.SemiBold)
                 }
                 Column {
-                    Text(text = "अनुकूल तापमान:", fontSize = 11.sp, color = TextSecondary)
+                    Text(text = if (isHindi) "अनुकूल तापमान:" else "Optimum Temp:", fontSize = 11.sp, color = TextSecondary)
                     Text(text = crop.temperature ?: "", fontSize = 12.sp, fontWeight = FontWeight.SemiBold)
                 }
             }
@@ -151,17 +152,38 @@ fun CropExpandableCard(crop: Crop) {
                     Divider(color = Color(0xFFEEEEEE), thickness = 0.8.dp)
                     Spacer(modifier = Modifier.height(8.dp))
 
-                    CropDetailSection(title = "उपयुक्त मिट्टी:", content = crop.soilHi)
-                    CropDetailSection(title = "सिंचाई प्रबंधन:", content = crop.irrigationHi)
-                    CropDetailSection(title = "खाद एवं उर्वरक (NPK):", content = crop.fertilizerHi)
-                    CropDetailSection(title = "कटाई व अवधि:", content = crop.harvestingHi)
-                    CropDetailSection(title = "प्रमुख कीट:", content = crop.pestsHi)
-                    CropDetailSection(title = "प्रमुख रोग:", content = crop.diseasesHi)
-                    CropDetailSection(title = "उन्नत तकनीक व सुझाव:", content = crop.cultivationTipsHi)
+                    CropDetailSection(
+                        title = if (isHindi) "उपयुक्त मिट्टी:" else "Suitable Soil:",
+                        content = if (isHindi) crop.soilHi else crop.soil
+                    )
+                    CropDetailSection(
+                        title = if (isHindi) "सिंचाई प्रबंधन:" else "Irrigation Management:",
+                        content = if (isHindi) crop.irrigationHi else crop.irrigation
+                    )
+                    CropDetailSection(
+                        title = if (isHindi) "खाद एवं उर्वरक (NPK):" else "Fertilizer Schedule (NPK):",
+                        content = if (isHindi) crop.fertilizerHi else crop.fertilizer
+                    )
+                    CropDetailSection(
+                        title = if (isHindi) "कटाई व अवधि:" else "Harvesting & Duration:",
+                        content = if (isHindi) crop.harvestingHi else crop.harvesting
+                    )
+                    CropDetailSection(
+                        title = if (isHindi) "प्रमुख कीट:" else "Major Pests:",
+                        content = if (isHindi) crop.pestsHi else crop.pests
+                    )
+                    CropDetailSection(
+                        title = if (isHindi) "प्रमुख रोग:" else "Common Diseases:",
+                        content = if (isHindi) crop.diseasesHi else crop.diseases
+                    )
+                    CropDetailSection(
+                        title = if (isHindi) "उन्नत तकनीक व सुझाव:" else "Cultivation Best Practices:",
+                        content = if (isHindi) crop.cultivationTipsHi else crop.cultivationTips
+                    )
 
                     Spacer(modifier = Modifier.height(6.dp))
                     Text(
-                        text = "स्रोत: ${crop.source ?: "भाकृअनुप (ICAR)"}",
+                        text = if (isHindi) "स्रोत: ${crop.source ?: "भाकृअनुप (ICAR)"}" else "Source: ${crop.source ?: "ICAR"}",
                         style = MaterialTheme.typography.labelSmall.copy(
                             color = TextSecondary,
                             fontSize = 11.sp
@@ -179,7 +201,11 @@ fun CropExpandableCard(crop: Crop) {
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Text(
-                    text = if (isExpanded) "कम विवरण देखें" else "विस्तृत विवरण देखें",
+                    text = if (isExpanded) {
+                        if (isHindi) "कम विवरण देखें" else "Show Less"
+                    } else {
+                        if (isHindi) "विस्तृत विवरण देखें" else "Show Detailed Guide"
+                    },
                     fontSize = 11.sp,
                     color = GreenPrimary,
                     fontWeight = FontWeight.Medium

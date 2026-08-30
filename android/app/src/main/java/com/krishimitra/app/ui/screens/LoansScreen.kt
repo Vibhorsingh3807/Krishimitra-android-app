@@ -74,6 +74,8 @@ fun LoansScreen(dbHelper: DatabaseHelper) {
 
 @Composable
 fun LoanCard(loan: Loan, onOpenLink: () -> Unit) {
+    val isHindi = androidx.compose.ui.platform.LocalConfiguration.current.locales[0].language == "hi"
+
     Card(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(14.dp),
@@ -83,7 +85,7 @@ fun LoanCard(loan: Loan, onOpenLink: () -> Unit) {
         Column(modifier = Modifier.padding(16.dp)) {
             // Bank Name
             Text(
-                text = loan.bankNameHi,
+                text = if (isHindi) loan.bankNameHi else loan.bankName,
                 style = MaterialTheme.typography.labelMedium.copy(
                     color = GreenPrimary,
                     fontWeight = FontWeight.Bold
@@ -92,7 +94,7 @@ fun LoanCard(loan: Loan, onOpenLink: () -> Unit) {
 
             // Loan Title
             Text(
-                text = loan.loanTypeHi,
+                text = if (isHindi) loan.loanTypeHi else loan.loanType,
                 style = MaterialTheme.typography.titleMedium.copy(
                     fontWeight = FontWeight.Bold,
                     color = TextPrimary
@@ -112,18 +114,18 @@ fun LoanCard(loan: Loan, onOpenLink: () -> Unit) {
                 horizontalArrangement = Arrangement.SpaceBetween
             ) {
                 Column {
-                    Text(text = "ब्याज दर:", fontSize = 11.sp, color = TextSecondary)
+                    Text(text = if (isHindi) "ब्याज दर:" else "Interest Rate:", fontSize = 11.sp, color = TextSecondary)
                     Text(
-                        text = loan.interestRateHi ?: "रियायती",
+                        text = if (isHindi) (loan.interestRateHi ?: "रियायती") else (loan.interestRate ?: "Concessional"),
                         fontSize = 13.sp,
                         fontWeight = FontWeight.Bold,
                         color = Color(0xFFD84315)
                     )
                 }
                 Column(horizontalAlignment = Alignment.End) {
-                    Text(text = "अधिकतम सीमा:", fontSize = 11.sp, color = TextSecondary)
+                    Text(text = if (isHindi) "अधिकतम सीमा:" else "Max Limit:", fontSize = 11.sp, color = TextSecondary)
                     Text(
-                        text = loan.maxLimitHi ?: "",
+                        text = if (isHindi) (loan.maxLimitHi ?: "") else (loan.maxLimit ?: ""),
                         fontSize = 13.sp,
                         fontWeight = FontWeight.Bold,
                         color = GreenPrimary
@@ -135,11 +137,11 @@ fun LoanCard(loan: Loan, onOpenLink: () -> Unit) {
 
             // Purpose
             Text(
-                text = "ऋण का उद्देश्य:",
+                text = if (isHindi) "ऋण का उद्देश्य:" else "Loan Purpose:",
                 style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold)
             )
             Text(
-                text = loan.purposeHi ?: "",
+                text = if (isHindi) (loan.purposeHi ?: "") else (loan.purposeEn ?: ""),
                 style = MaterialTheme.typography.bodySmall.copy(color = TextSecondary, lineHeight = 18.sp)
             )
 
@@ -147,11 +149,11 @@ fun LoanCard(loan: Loan, onOpenLink: () -> Unit) {
 
             // Documents
             Text(
-                text = "आवश्यक दस्तावेज:",
+                text = if (isHindi) "आवश्यक दस्तावेज:" else "Documents Required:",
                 style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold)
             )
             Text(
-                text = loan.documentsRequiredHi ?: "",
+                text = if (isHindi) (loan.documentsRequiredHi ?: "") else (loan.documentsRequired ?: ""),
                 style = MaterialTheme.typography.bodySmall.copy(color = TextSecondary, lineHeight = 18.sp)
             )
 
@@ -168,7 +170,10 @@ fun LoanCard(loan: Loan, onOpenLink: () -> Unit) {
                     modifier = Modifier.size(16.dp)
                 )
                 Spacer(modifier = Modifier.width(6.dp))
-                Text("बैंक पोर्टल पर विस्तृत विवरण देखें", fontSize = 12.sp)
+                Text(
+                    text = if (isHindi) "बैंक पोर्टल पर विस्तृत विवरण देखें" else "View Details on Bank Portal",
+                    fontSize = 12.sp
+                )
             }
         }
     }

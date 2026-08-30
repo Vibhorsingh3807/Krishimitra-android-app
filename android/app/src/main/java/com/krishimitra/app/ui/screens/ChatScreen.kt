@@ -46,6 +46,9 @@ fun ChatScreen(
     val isListening by voiceManager.isListening.collectAsState()
     val isSpeaking by voiceManager.isSpeaking.collectAsState()
     val voiceMode by voiceManager.voiceMode.collectAsState()
+    val voiceState by voiceManager.voiceState.collectAsState()
+    val lastVoiceError by voiceManager.lastError.collectAsState()
+    val appLocale = androidx.compose.ui.platform.LocalConfiguration.current.locales[0].language
 
     val messages = remember {
         mutableStateListOf(
@@ -74,10 +77,20 @@ fun ChatScreen(
 
         coroutineScope.launch {
             listState.animateScrollToItem(messages.size - 1)
-            val reply = aiRouter.routeQuery(query)
+            val isAppHindi = appLocale == "hi"
+            val forceLang = when (voiceMode) {
+                VoiceMode.HINDI -> "hi"
+                VoiceMode.ENGLISH -> "en"
+                VoiceMode.AUTO -> {
+                    if (com.krishimitra.app.voice.LanguageDetector.isHindiResponsePreferred(query, VoiceMode.AUTO)) "hi"
+                    else if (isAppHindi) "hi"
+                    else "en"
+                }
+            }
+            val reply = aiRouter.routeQuery(query, forceLang = forceLang)
             messages.add(reply)
             listState.animateScrollToItem(messages.size - 1)
-            voiceManager.speak(reply.text)
+            voiceManager.speak(reply.text, forceHindi = (forceLang == "hi"))
         }
     }
 
@@ -197,6 +210,33 @@ fun ChatScreen(
                     fontWeight = FontWeight.Bold,
                     fontSize = 13.sp
                 )
+            }
+        }
+
+        // Voice Error / Offline Notice Banner
+        AnimatedVisibility(visible = lastVoiceError != null && !isListening) {
+            lastVoiceError?.let { err ->
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .background(Color(0xFFFFF3E0))
+                        .padding(horizontal = 12.dp, vertical = 6.dp),
+                    horizontalArrangement = Arrangement.Center,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Info,
+                        contentDescription = null,
+                        tint = Color(0xFFE65100),
+                        modifier = Modifier.size(16.dp)
+                    )
+                    Spacer(modifier = Modifier.width(6.dp))
+                    Text(
+                        text = err,
+                        color = Color(0xFFE65100),
+                        fontSize = 12.sp
+                    )
+                }
             }
         }
 

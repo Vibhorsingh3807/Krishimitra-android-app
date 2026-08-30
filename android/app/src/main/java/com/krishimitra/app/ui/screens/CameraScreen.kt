@@ -181,6 +181,8 @@ fun CameraScreen(
                     Divider(color = CardBorder, thickness = 0.8.dp)
                     Spacer(modifier = Modifier.height(10.dp))
 
+                    val isHindi = androidx.compose.ui.platform.LocalConfiguration.current.locales[0].language == "hi"
+
                     if (result.isUncertain) {
                         // Uncertain Warning
                         Row(
@@ -207,14 +209,14 @@ fun CameraScreen(
                     } else {
                         // Crop & Disease Name
                         Text(
-                            text = "फसल: ${result.crop}",
+                            text = if (isHindi) "फसल: ${result.crop}" else "Crop: ${result.crop}",
                             style = MaterialTheme.typography.titleMedium.copy(
                                 fontWeight = FontWeight.SemiBold,
                                 color = TextPrimary
                             )
                         )
                         Text(
-                            text = "रोग: ${result.diseaseNameHi} (${result.diseaseNameEn})",
+                            text = if (isHindi) "रोग: ${result.diseaseNameHi} (${result.diseaseNameEn})" else "Disease: ${result.diseaseNameEn} (${result.diseaseNameHi})",
                             style = MaterialTheme.typography.titleMedium.copy(
                                 fontWeight = FontWeight.Bold,
                                 color = AlertRed

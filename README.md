@@ -2,34 +2,41 @@
 
 > **"आपका डिजिटल कृषि साथी — Your Intelligent Farming Companion"**
 
-KrishiMitra is a production-grade, offline-first Android application and accompanying backend/ML system specifically engineered for Indian farmers. It bridges the critical agricultural advisory gap for rural smallholders and marginal farmers operating budget Android smartphones with limited RAM, weak CPUs, and intermittent or absent internet connectivity.
+KrishiMitra is a production-grade, offline-first Android application and accompanying edge ML/backend system specifically engineered for Indian farmers. It bridges the critical agricultural advisory gap for rural smallholders and marginal farmers operating budget Android smartphones with limited RAM (2–3 GB), weak CPUs, and intermittent or absent internet connectivity.
 
 ---
 
-## 🌟 Key Capabilities
+## 🌟 Key Capabilities (Phase 2 Upgrade)
 
-* **🌱 On-Device Agriculture AI (100% Offline Primary)**:
-  * Fast (< 3 ms) natural language intent classification and semantic retrieval over a verified database of 15 major Indian crops.
-  * Responds directly in clear, conversational **Hindi** or **English**.
-  * Zero hallucinations: never fabricates chemicals, dosages, or schemes.
-* **🔬 Quantized Crop Disease Scanner (Offline Computer Vision)**:
+* **🤖 On-Device Small Language Model (`KrishiMiniLM`)**:
+  * Genuine causal Transformer language model (1,133,568 parameters) trained specifically for agricultural question answering in Hindi and English.
+  * Ultra-compact dynamic UINT8 quantization (**1.60 MB** ONNX model).
+  * Ultra-low latency: **5.55 ms** CPU inference on mobile without UI lag.
+  * Strictly conditioned on RAG context: zero hallucinations, zero fabricated dosages.
+* **📚 Local BM25 RAG Retrieval Engine**:
+  * 100% offline retrieval running in pure Kotlin in **1.42 ms**.
+  * Pre-seeded knowledge across **25 Indian crops**, 12 plant diseases, 8 central government schemes, and 5 institutional loans.
+  * Dynamic crop alias boosting ($1.5\times$) for Devanagari, English, and Hinglish queries.
+* **🌾 Farmer Community Experience Memory (`FARMER_EXPERIENCE`)**:
+  * Dedicated storage in an isolated SQLite table (`farmer_experiences`).
+  * Never retrains model weights or treats observations as verified facts.
+  * Displayed with clear cautionary attribution: *"🌾 कुछ किसानों के अनुभव (अपुष्ट रिपोर्ट): • उत्तर प्रदेश के किसान: '...' / Some farmer reports suggest..."*
+* **🌐 Global Bilingual Language Switch (`English | हिन्दी`)**:
+  * One-tap persistent switch in the TopBar (`[EN | हिन्दी]`) affecting all screens, navigation, dialogs, and TTS immediately via Compose `CompositionLocalProvider`.
+* **🎙️ Push-to-Talk Voice Assistant (`AUTO | हिन्दी | English`)**:
+  * Three explicit selectable modes:
+    * `AUTO`: Detects language script (Devanagari vs Latin) and Hinglish keywords dynamically.
+    * `हिन्दी`: Locked to Hindi STT, Hindi RAG, and Hindi TTS.
+    * `ENGLISH`: Locked to Indian English STT, English RAG, and English TTS.
+  * Graceful offline STT/TTS checks and fallback handling.
+* **🔬 Quantized Crop Disease Scanner (`MobileAgriNet`)**:
   * Camera leaf viewfinder with edge-framing assistance.
-  * Quantized on-device neural classifier (38.9 KB, 2.2 ms latency) targeting 12 Indian agricultural classes: *Rice Blast, Rice Brown Spot, Wheat Yellow Rust, Wheat Loose Smut, Cotton Blight, Potato Early/Late Blights, Tomato Blights, Healthy Leaf, Soil, and Blurred/Uncertain*.
+  * Quantized on-device neural classifier (**38.96 KB INT8**, **2.23 ms latency**) targeting 12 Indian agricultural classes.
   * Provides observed symptoms, organic/IPM remedies, verified ICAR chemical dosages, and prevention rules.
-* **🎙️ Hold-to-Talk Voice Assistant**:
-  * Farmer-friendly voice interaction: press and hold the mic to speak, release to send.
-  * Bilingual speech recognition with automatic language mode (Auto, Hindi, English).
-  * Natural Text-to-Speech playback of every AI response for low-literacy accessibility.
 * **🌦️ Actionable Agricultural Weather**:
-  * Live localized temperature, humidity, wind, and rain probabilities.
-  * Actionable farmer-oriented advisories (e.g., *"कल भारी बारिश का अनुमान है, आज सिंचाई व कीटनाशक छिड़काव स्थगित रखें"*).
-  * Manual district switcher with offline regional climatological baseline.
-* **🏛️ Verified Government Schemes & Loans**:
-  * Complete, non-fabricated criteria for PM-KISAN, PMFBY, KCC, Soil Health Card, PMKSY, SMAM, PKVY, and Animal Husbandry KCC.
-  * Direct intent links to official government portals (`pmkisan.gov.in`, `pmfby.gov.in`, etc.).
-* **🔄 Offline-First Hybrid Architecture**:
-  * Pre-seeded Room SQLite database (`krishi_knowledge.db`, 1.16 MB) pre-packaged inside the APK.
-  * Automatic network detection: transparently falls back to cloud AI (FastAPI / Gemini / OpenAI) only when online and local confidence is low.
+  * Live localized temperature, humidity, wind, and rain probabilities from Open-Meteo with offline district baseline fallbacks.
+* **📦 Compiled Standalone Debug APK Ready to Deploy**:
+  * Compiled directly via Gradle: **`app-debug.apk`** (88.85 MB, fully self-contained with embedded ONNX models and SQLite database).
 
 ---
 
@@ -38,67 +45,73 @@ KrishiMitra is a production-grade, offline-first Android application and accompa
 ```
 ├── android/                         # Complete Jetpack Compose Android Application
 │   ├── app/src/main/
-│   │   ├── java/com/krishimitra/app/ # Clean Architecture (UI, Domain, Data, ML, Voice)
-│   │   ├── assets/                 # Pre-seeded SQLite DB, ONNX Vision Model, NLP vocab
-│   │   └── res/                    # Full English & Hindi-first Localization (values & values-hi)
-│   └── build.gradle.kts            # Modern Kotlin 2.0 & AGP 8.7+ configuration
+│   │   ├── java/com/krishimitra/app/
+│   │   │   ├── domain/language/    # LanguageManager & AppLanguage (English / हिन्दी)
+│   │   │   ├── domain/rag/         # LocalRAGEngine (BM25 sparse ranking in pure Kotlin)
+│   │   │   ├── ml/                 # OnnxLanguageModel & OnnxDiseaseClassifier
+│   │   │   ├── voice/              # VoiceManager & LanguageDetector (AUTO mode)
+│   │   │   ├── ui/                 # Material 3 Screens & Components
+│   │   │   └── data/               # DatabaseHelper (SQLite 25 crops, RAG & experiences)
+│   │   ├── assets/                 # Pre-seeded SQLite DB, KrishiMiniLM INT8, Vision INT8
+│   │   └── res/                    # Dual localization trees (values & values-hi)
+│   └── build.gradle.kts            # Android Gradle configuration
+├── ml/                              # Dedicated Phase 2 ML Pipeline
+│   ├── data/                       # RAG QA dataset, farmer experiences, triplets
+│   ├── training/                   # train_local_llm.py (KrishiMiniLM PyTorch GPU training)
+│   ├── export/                     # export_quantize_llm.py (INT8 ONNX quantization)
+│   ├── evaluation/                 # evaluate_model.py (Fixed bilingual test suite)
+│   └── scripts/                    # build_full_database.py (SQLite database builder)
 ├── backend/                        # Production-grade Python FastAPI service
 │   ├── app/                        # REST APIs, SQLAlchemy models, AI provider abstraction
-│   ├── tests/                      # Pytest automated test suite
-│   ├── requirements.txt            # Python dependencies
-│   └── .env.example                # Backend environment configuration
+│   └── tests/                      # Pytest automated test suite (9/9 passing)
 ├── data/                           # Verified ICAR, Ministry & Banking Seed Datasets
-│   ├── verified_crops.json         # 15 Indian crops with agronomic parameters
+│   ├── verified_crops.json         # 25 Indian crops with ICAR agronomic parameters
 │   ├── verified_diseases.json      # 12 disease classes with symptoms and treatments
 │   ├── verified_schemes.json       # Central & State agricultural schemes
 │   └── verified_loans.json         # Institutional farm loan terms
-├── ml_pipeline/                    # Reproducible ML & Quantization Pipeline
-│   ├── prepare_dataset.py          # Generates 1,400+ realistic farmer query variations
-│   ├── train_nlp.py                # Trains intent model & exports mobile vocab
-│   ├── train_disease.py            # MobileAgriNet CNN trainer (CUDA RTX 4060 / CPU)
-│   ├── export_quantize.py          # INT8 / UINT8 mobile quantization & benchmarks
-│   └── generate_android_assets.py  # Generates SQLite DB & deploys mobile assets
-├── BENCHMARK_REPORT.md             # Model latency, RAM, and size benchmarks
-├── README.md                       # Main project overview
-├── SETUP.md                        # Quickstart setup instructions
-├── TRAINING.md                     # Model training & updating instructions
-├── ARCHITECTURE.md                 # Technical architecture deep dive
-├── API.md                          # REST API documentation
-├── DATA_SOURCES.md                 # Government & ICAR provenance attribution
-├── TESTING.md                      # Comprehensive test plan & results
-└── TROUBLESHOOTING.md              # Common setup questions and answers
+├── app-debug.apk                   # Final compiled standalone Android APK (88.85 MB)
+├── RAG.md                          # RAG architecture, BM25 formula, & memory isolation
+├── VOICE.md                        # Voice assistant architecture & offline speech
+├── LOCALIZATION.md                 # Complete bilingual system documentation
+├── MODEL_EVALUATION.md             # Benchmark evaluation on fixed test set
+├── PERFORMANCE.md                  # Low-end device profiling & latency benchmarks
+└── ARCHITECTURE.md                 # End-to-end system design & Mermaid diagrams
 ```
 
 ---
 
-## 🚀 Quickstart & Verification
+## 🚀 How to Run and Test
 
-### 1. Backend Service
+### 1. Install & Test the Android App
+Transfer `app-debug.apk` to any Android smartphone running Android 8.0+ (API 26+) and install:
 ```bash
-python -m pip install -r backend/requirements.txt
-python -m pytest backend/tests/test_api.py -v
-python -m uvicorn backend.app.main:app --host 0.0.0.0 --port 8000 --reload
+adb install -r app-debug.apk
 ```
-Visit API docs at `http://localhost:8000/docs`.
+* **Offline AI Test**: Put device in **Airplane Mode**. Ask: *"What soil is best for rice?"* or *"धान में कौन सी खाद डालें?"*. Notice instant grounded answer with verified ICAR badge!
+* **Language Switch Test**: Tap `[EN | हिन्दी]` in the TopBar. Watch every screen seamlessly translate without reloading.
+* **Farmer Experience Test**: Ask about wheat, rice, or mustard. Observe the separate community observation note.
+* **Camera Test**: Point camera at a leaf or use the sample buttons (*स्वस्थ पत्ती*, *झुलसा रोग*, *पीला रतुआ*) to see real-time inference.
 
-### 2. Retraining & Quantizing ML Models
+### 2. Run ML Pipeline Locally
 ```bash
-python ml_pipeline/prepare_dataset.py
-python ml_pipeline/train_nlp.py
-python ml_pipeline/train_disease.py
-python ml_pipeline/export_quantize.py
-python ml_pipeline/generate_android_assets.py
+# Prepare RAG records and triplets
+python ml/data/prepare_rag_dataset.py
+
+# Rebuild full SQLite database and deploy to Android assets
+python ml/scripts/build_full_database.py
+
+# Train KrishiMiniLM on GPU
+python ml/training/train_local_llm.py
+
+# Quantize to INT8 and benchmark
+python ml/export/export_quantize_llm.py
+
+# Run benchmark evaluation
+python ml/evaluation/evaluate_model.py
 ```
 
-### 3. Android APK Compilation
+### 3. Run Backend Server
 ```bash
-cd android
-gradlew.bat assembleDebug
+cd backend
+python -m uvicorn app.main:app --reload --port 8000
 ```
-The compiled debug APK is located at:
-`android/app/build/outputs/apk/debug/app-debug.apk`
-
----
-
-## 👥 Contributors & SIH Attribution
-Developed for the **Smart India Hackathon (SIH) Student Innovation Project** under the Agriculture, Food Tech & Rural Development theme.

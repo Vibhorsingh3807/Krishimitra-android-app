@@ -33,6 +33,8 @@ import com.krishimitra.app.ui.theme.*
 fun KrishiTopBar(
     title: String,
     isOnline: Boolean,
+    currentLanguage: com.krishimitra.app.domain.language.AppLanguage = com.krishimitra.app.domain.language.AppLanguage.HINDI,
+    onLanguageToggle: () -> Unit = {},
     onSourcesClick: () -> Unit = {},
     showBack: Boolean = false,
     onBackClick: () -> Unit = {}
@@ -50,7 +52,7 @@ fun KrishiTopBar(
                         fontWeight = FontWeight.Bold
                     )
                 )
-                StatusPill(isOnline = isOnline)
+                StatusPill(isOnline = isOnline, isHindi = currentLanguage == com.krishimitra.app.domain.language.AppLanguage.HINDI)
             }
         },
         navigationIcon = {
@@ -65,6 +67,35 @@ fun KrishiTopBar(
             }
         },
         actions = {
+            // Global Language Switch Toggle Pill (EN | हिन्दी)
+            Surface(
+                modifier = Modifier
+                    .clip(RoundedCornerShape(16.dp))
+                    .clickable { onLanguageToggle() }
+                    .padding(horizontal = 4.dp),
+                color = Color(0x33FFFFFF),
+                shape = RoundedCornerShape(16.dp)
+            ) {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Translate,
+                        contentDescription = "Language",
+                        tint = Color.White,
+                        modifier = Modifier.size(16.dp)
+                    )
+                    Spacer(modifier = Modifier.width(4.dp))
+                    Text(
+                        text = if (currentLanguage == com.krishimitra.app.domain.language.AppLanguage.HINDI) "हिन्दी" else "EN",
+                        color = Color.White,
+                        fontSize = 12.sp,
+                        fontWeight = FontWeight.Bold
+                    )
+                }
+            }
+
             IconButton(onClick = onSourcesClick) {
                 Icon(
                     imageVector = Icons.Default.Info,
@@ -80,9 +111,13 @@ fun KrishiTopBar(
 }
 
 @Composable
-fun StatusPill(isOnline: Boolean) {
+fun StatusPill(isOnline: Boolean, isHindi: Boolean = true) {
     val bgColor = if (isOnline) Color(0xFF2E7D32) else Color(0xFFD84315)
-    val text = if (isOnline) "ऑनलाइन (Online)" else "ऑफ़लाइन (Offline)"
+    val text = if (isOnline) {
+        if (isHindi) "ऑनलाइन" else "Online"
+    } else {
+        if (isHindi) "ऑफ़लाइन" else "Offline"
+    }
 
     Row(
         verticalAlignment = Alignment.CenterVertically,

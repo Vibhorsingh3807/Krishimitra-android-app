@@ -1,0 +1,62 @@
+[
+  {
+    "id": "exp_001",
+    "crop_id": "wheat",
+    "crop_name": "Wheat (गेहूं)",
+    "state": "Uttar Pradesh",
+    "district": "Meerut",
+    "observation": "CRI (Crown Root Initiation) par pehli sinchai samay se karne par kalle bahut acche nikle.",
+    "observation_hi": "ताजमूल (CRI) अवस्था पर 21 दिन में पहली हल्की सिंचाई करने से कल्ले बहुत अच्छे फूटे।",
+    "observation_en": "Timely first irrigation at CRI stage (21 days) resulted in strong tillering.",
+    "language": "hi",
+    "created_at": "2026-02-10"
+  },
+  {
+    "id": "exp_002",
+    "crop_id": "rice",
+    "crop_name": "Rice (धान)",
+    "state": "Punjab",
+    "district": "Ludhiana",
+    "observation": "Direct Seeded Rice (DSR) tarike se paani ki 30% bachat hui aur paudha majboot raha.",
+    "observation_hi": "सीधी बिजाई (DSR) विधि अपनाने से पानी की 30% बचत हुई और खरपतवार नियंत्रण में आसानी रही।",
+    "observation_en": "Direct Seeded Rice (DSR) saved 30% water with good crop stand.",
+    "language": "hi",
+    "created_at": "2026-01-18"
+  },
+  {
+    "id": "exp_003",
+    "crop_id": "mustard",
+    "crop_name": "Mustard (सरसों)",
+    "state": "Rajasthan",
+    "district": "Bharatpur",
+    "observation": "Sulphur 25kg/ha daalne se daano mein chamak aur tel ki matra badh gayi.",
+    "observation_hi": "बुवाई के समय 25 किग्रा बेंटोनाइट सल्फर डालने से दाने मोटे हुए और तेल का प्रतिशत बढ़ा।",
+    "observation_en": "Applying 25 kg/ha Sulphur at sowing significantly boosted grain quality and oil content.",
+    "language": "hi",
+    "created_at": "2026-02-01"
+  },
+  {
+    "id": "exp_004",
+    "crop_id": "potato",
+    "crop_name": "Potato (आलू)",
+    "state": "Uttar Pradesh",
+    "district": "Agra",
+    "observation": "Kifayati drip fertigation se aaloo ka size uniform raha aur jhulsa rog kam laga.",
+    "observation_hi": "ड्रिप फर्टिगेशन से आलू का आकार एक समान रहा और झुलसा रोग का प्रकोप काफी कम हुआ।",
+    "observation_en": "Drip fertigation maintained uniform tuber size and minimized blight incidence.",
+    "language": "hi",
+    "created_at": "2026-01-25"
+  },
+  {
+    "id": "exp_005",
+    "crop_id": "tomato",
+    "crop_name": "Tomato (टमाटर)",
+    "state": "Madhya Pradesh",
+    "district": "Indore",
+    "observation": "Neem oil aur sticky traps lagane se safed makkhi ka prakop bina keetnashak kam ho gaya.",
+    "observation_hi": "नीम का तेल (1500 ppm) और पीले चिपचिपे कार्ड लगाने से सफेद मक्खी का नियंत्रण आसानी से हुआ।",
+    "observation_en": "Using 1500 ppm Neem oil with yellow sticky traps effectively controlled whitefly organically.",
+    "language": "hi",
+    "created_at": "2026-02-14"
+  }
+]

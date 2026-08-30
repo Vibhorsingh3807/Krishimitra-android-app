@@ -2,29 +2,56 @@ package com.krishimitra.app.domain.ai
 
 import com.krishimitra.app.data.remote.ApiClient
 import com.krishimitra.app.domain.model.ChatMessage
+import com.krishimitra.app.domain.rag.LocalRAGEngine
 import com.krishimitra.app.ml.LocalNLPEngine
+import com.krishimitra.app.ml.OnnxLanguageModel
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 
 interface AIProvider {
-    suspend fun answer(query: String, crop: String? = null): ChatMessage
+    suspend fun answer(query: String, crop: String? = null, forceLang: String? = null): ChatMessage
 }
 
-class LocalAIProvider(private val localEngine: LocalNLPEngine) : AIProvider {
-    override suspend fun answer(query: String, crop: String?): ChatMessage = withContext(Dispatchers.Default) {
-        val result = localEngine.answerQuery(query)
+class LocalAIProvider(
+    private val ragEngine: LocalRAGEngine,
+    private val languageModel: OnnxLanguageModel,
+    private val localEngine: LocalNLPEngine
+) : AIProvider {
+    override suspend fun answer(query: String, crop: String?, forceLang: String?): ChatMessage = withContext(Dispatchers.Default) {
+        val isHindi = forceLang == "hi" || (forceLang == null && query.any { it.code in 0x0900..0x097F })
+
+        // 1. Retrieve knowledge via Local BM25 RAG Engine
+        val ragResult = ragEngine.retrieve(query, forceLang)
+
+        // 2. If RAG found a match or farmer experience, synthesize via OnnxLanguageModel
+        if (ragResult.bestRecord != null || ragResult.farmerExperiences.isNotEmpty()) {
+            val generatedText = languageModel.generateAnswer(ragResult)
+            return@withContext ChatMessage(
+                text = generatedText,
+                isUser = false,
+                source = ragResult.sourceBadge,
+                isVerified = ragResult.isVerified,
+                intent = ragResult.bestRecord?.topic ?: "agriculture"
+            )
+        }
+
+        // 3. Fall back to Local NLP Intent & Knowledge Base
+        // Ensures greetings, fertilizer, sowing, irrigation, pests, and schemes in Hindi ALWAYS answer factually!
+        val nlpResult = localEngine.answerQuery(query, forceLang = if (isHindi) "hi" else "en")
+        val ans = if (isHindi) nlpResult.answerHi else nlpResult.answer
+
         return@withContext ChatMessage(
-            text = result.answer,
+            text = ans,
             isUser = false,
-            source = result.source,
-            isVerified = result.isVerified,
-            intent = result.intent
+            source = nlpResult.source,
+            isVerified = nlpResult.isVerified,
+            intent = nlpResult.intent
         )
     }
 }
 
-class CloudAIProvider(private val apiClient: ApiClient) : AIProvider {
-    override suspend fun answer(query: String, crop: String?): ChatMessage = withContext(Dispatchers.IO) {
+class RemoteAIProvider(private val apiClient: ApiClient) : AIProvider {
+    override suspend fun answer(query: String, crop: String?, forceLang: String?): ChatMessage = withContext(Dispatchers.IO) {
         val cloudResponse = apiClient.queryCloudAI(query, crop)
         if (cloudResponse != null) {
             val ans = cloudResponse.get("answer").asString
@@ -45,26 +72,29 @@ class CloudAIProvider(private val apiClient: ApiClient) : AIProvider {
 }
 
 class HybridAIRouter(
+    private val ragEngine: LocalRAGEngine,
+    private val languageModel: OnnxLanguageModel,
     private val localEngine: LocalNLPEngine,
     private val apiClient: ApiClient
 ) {
-    private val localProvider = LocalAIProvider(localEngine)
-    private val cloudProvider = CloudAIProvider(apiClient)
+    private val localProvider = LocalAIProvider(ragEngine, languageModel, localEngine)
+    private val remoteProvider = RemoteAIProvider(apiClient)
 
-    suspend fun routeQuery(query: String, crop: String? = null): ChatMessage = withContext(Dispatchers.Default) {
-        val (predictedIntent, confidence) = localEngine.predictIntent(query)
+    suspend fun routeQuery(query: String, crop: String? = null, forceLang: String? = null): ChatMessage = withContext(Dispatchers.Default) {
+        // Evaluate local provider first (RAG + LLM + NLP fallback)
+        val localMsg = localProvider.answer(query, crop, forceLang)
 
-        // Step 1: High local confidence OR offline -> Answer immediately using local knowledge
-        if (confidence >= 0.70f || !apiClient.isNetworkAvailable()) {
-            return@withContext localProvider.answer(query, crop)
+        // If local answer is verified OR device has no network, return immediately
+        if (localMsg.isVerified || !apiClient.isNetworkAvailable()) {
+            return@withContext localMsg
         }
 
-        // Step 2: Low confidence AND internet available -> Fall back to Cloud AI
+        // Low confidence AND internet available -> Attempt remote AI fallback
         try {
-            return@withContext cloudProvider.answer(query, crop)
+            return@withContext remoteProvider.answer(query, crop, forceLang)
         } catch (e: Exception) {
-            // Step 3: Graceful fallback to local engine if cloud fails
-            return@withContext localProvider.answer(query, crop)
+            // Graceful fallback to local response
+            return@withContext localMsg
         }
     }
 }

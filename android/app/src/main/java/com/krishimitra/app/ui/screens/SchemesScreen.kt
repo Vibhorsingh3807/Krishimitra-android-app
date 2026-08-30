@@ -81,6 +81,8 @@ fun SchemesScreen(dbHelper: DatabaseHelper) {
 
 @Composable
 fun SchemeCard(scheme: Scheme, onOpenPortal: () -> Unit) {
+    val isHindi = androidx.compose.ui.platform.LocalConfiguration.current.locales[0].language == "hi"
+
     Card(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(14.dp),
@@ -99,7 +101,7 @@ fun SchemeCard(scheme: Scheme, onOpenPortal: () -> Unit) {
                     color = Color(0xFFEDE7F6)
                 ) {
                     Text(
-                        text = scheme.categoryHi ?: "सरकारी योजना",
+                        text = if (isHindi) (scheme.categoryHi ?: "सरकारी योजना") else (scheme.category ?: "Government Scheme"),
                         modifier = Modifier.padding(horizontal = 8.dp, vertical = 3.dp),
                         style = MaterialTheme.typography.labelSmall.copy(
                             color = Color(0xFF512DA8),
@@ -118,7 +120,7 @@ fun SchemeCard(scheme: Scheme, onOpenPortal: () -> Unit) {
                     )
                     Spacer(modifier = Modifier.width(4.dp))
                     Text(
-                        text = "सत्यापित",
+                        text = if (isHindi) "सत्यापित" else "Verified",
                         color = GreenPrimary,
                         fontSize = 11.sp,
                         fontWeight = FontWeight.Bold
@@ -130,14 +132,14 @@ fun SchemeCard(scheme: Scheme, onOpenPortal: () -> Unit) {
 
             // Scheme Name
             Text(
-                text = scheme.nameHi,
+                text = if (isHindi) scheme.nameHi else scheme.nameEn,
                 style = MaterialTheme.typography.titleMedium.copy(
                     fontWeight = FontWeight.Bold,
                     color = TextPrimary
                 )
             )
             Text(
-                text = scheme.nameEn,
+                text = if (isHindi) scheme.nameEn else scheme.nameHi,
                 style = MaterialTheme.typography.bodySmall.copy(
                     color = TextSecondary,
                     fontSize = 12.sp
@@ -150,14 +152,14 @@ fun SchemeCard(scheme: Scheme, onOpenPortal: () -> Unit) {
 
             // Benefits
             Text(
-                text = "योजना के लाभ:",
+                text = if (isHindi) "योजना के लाभ:" else "Scheme Benefits:",
                 style = MaterialTheme.typography.labelMedium.copy(
                     fontWeight = FontWeight.Bold,
                     color = GreenPrimary
                 )
             )
             Text(
-                text = scheme.benefitsHi ?: "",
+                text = if (isHindi) (scheme.benefitsHi ?: "") else (scheme.benefitsEn ?: ""),
                 style = MaterialTheme.typography.bodyMedium.copy(
                     color = TextPrimary,
                     fontSize = 13.sp,
@@ -169,36 +171,61 @@ fun SchemeCard(scheme: Scheme, onOpenPortal: () -> Unit) {
 
             // Eligibility
             Text(
-                text = "पात्रता:",
+                text = if (isHindi) "पात्रता:" else "Eligibility Criteria:",
                 style = MaterialTheme.typography.labelMedium.copy(
                     fontWeight = FontWeight.Bold,
                     color = AmberSecondary
                 )
             )
             Text(
-                text = scheme.eligibilityHi ?: "",
+                text = if (isHindi) (scheme.eligibilityHi ?: "") else (scheme.eligibilityEn ?: ""),
                 style = MaterialTheme.typography.bodySmall.copy(
                     color = TextSecondary,
-                    lineHeight = 18.sp
+                    fontSize = 12.sp,
+                    lineHeight = 17.sp
                 )
             )
 
+            // Application Process
+            val processText = if (isHindi) scheme.applicationProcessHi else scheme.applicationProcessEn
+            if (!processText.isNullOrBlank()) {
+                Spacer(modifier = Modifier.height(8.dp))
+                Text(
+                    text = if (isHindi) "आवेदन प्रक्रिया:" else "Application Process:",
+                    style = MaterialTheme.typography.labelMedium.copy(
+                        fontWeight = FontWeight.Bold,
+                        color = TextPrimary
+                    )
+                )
+                Text(
+                    text = processText,
+                    style = MaterialTheme.typography.bodySmall.copy(
+                        color = TextSecondary,
+                        fontSize = 12.sp
+                    )
+                )
+            }
+
             Spacer(modifier = Modifier.height(12.dp))
 
-            // Application Link Button
+            // Action Button
             Button(
                 onClick = onOpenPortal,
-                shape = RoundedCornerShape(10.dp),
+                modifier = Modifier.fillMaxWidth(),
                 colors = ButtonDefaults.buttonColors(containerColor = GreenPrimary),
-                modifier = Modifier.fillMaxWidth()
+                shape = RoundedCornerShape(10.dp)
             ) {
                 Icon(
-                    imageVector = Icons.Default.OpenInNew,
+                    imageVector = Icons.Default.OpenInBrowser,
                     contentDescription = null,
                     modifier = Modifier.size(16.dp)
                 )
                 Spacer(modifier = Modifier.width(6.dp))
-                Text("आधिकारिक पोर्टल पर आवेदन करें", fontSize = 13.sp)
+                Text(
+                    text = if (isHindi) "आधिकारिक पोर्टल खोलें" else "Open Official Portal",
+                    fontSize = 13.sp,
+                    fontWeight = FontWeight.SemiBold
+                )
             }
         }
     }

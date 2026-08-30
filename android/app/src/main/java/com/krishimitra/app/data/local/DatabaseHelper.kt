@@ -7,7 +7,9 @@ import android.database.sqlite.SQLiteOpenHelper
 import android.util.Log
 import com.krishimitra.app.domain.model.Crop
 import com.krishimitra.app.domain.model.Disease
+import com.krishimitra.app.domain.model.FarmerExperience
 import com.krishimitra.app.domain.model.Loan
+import com.krishimitra.app.domain.model.RAGKnowledgeRecord
 import com.krishimitra.app.domain.model.Scheme
 import java.io.File
 import java.io.FileOutputStream
@@ -16,7 +18,7 @@ class DatabaseHelper(private val context: Context) : SQLiteOpenHelper(context, D
 
     companion object {
         const val DB_NAME = "krishi_knowledge.db"
-        const val DB_VERSION = 1
+        const val DB_VERSION = 2
         private const val TAG = "DatabaseHelper"
 
         @Volatile
@@ -35,7 +37,40 @@ class DatabaseHelper(private val context: Context) : SQLiteOpenHelper(context, D
 
     private fun ensureDatabaseExists() {
         val dbFile = context.getDatabasePath(DB_NAME)
-        if (!dbFile.exists()) {
+        var needsCopy = !dbFile.exists()
+
+        if (!needsCopy) {
+            // Check if rag_knowledge table exists and has rows
+            try {
+                SQLiteDatabase.openDatabase(dbFile.path, null, SQLiteDatabase.OPEN_READONLY).use { db ->
+                    val cursor = db.rawQuery("SELECT count(*) FROM sqlite_master WHERE type='table' AND name='rag_knowledge'", null)
+                    val hasTable = cursor.moveToFirst() && cursor.getInt(0) > 0
+                    cursor.close()
+                    if (!hasTable) {
+                        needsCopy = true
+                    } else {
+                        // Also verify it has rows
+                        val countCursor = db.rawQuery("SELECT count(*) FROM rag_knowledge", null)
+                        val count = if (countCursor.moveToFirst()) countCursor.getInt(0) else 0
+                        countCursor.close()
+                        if (count == 0) {
+                            needsCopy = true
+                        }
+                    }
+                }
+            } catch (e: Exception) {
+                needsCopy = true
+            }
+        }
+
+        if (needsCopy) {
+            try {
+                dbFile.delete()
+                File("${dbFile.path}-wal").delete()
+                File("${dbFile.path}-shm").delete()
+                File("${dbFile.path}-journal").delete()
+            } catch (ignored: Exception) {}
+
             dbFile.parentFile?.mkdirs()
             try {
                 context.assets.open(DB_NAME).use { input ->
@@ -55,7 +90,17 @@ class DatabaseHelper(private val context: Context) : SQLiteOpenHelper(context, D
     }
 
     override fun onUpgrade(db: SQLiteDatabase?, oldVersion: Int, newVersion: Int) {
-        // Handled via sync API
+        val dbFile = context.getDatabasePath(DB_NAME)
+        try {
+            context.assets.open(DB_NAME).use { input ->
+                FileOutputStream(dbFile).use { output ->
+                    input.copyTo(output)
+                }
+            }
+            Log.i(TAG, "Upgraded knowledge database to version $newVersion successfully.")
+        } catch (e: Exception) {
+            Log.e(TAG, "Failed to upgrade database from assets: ${e.message}", e)
+        }
     }
 
     fun getAllCrops(): List<Crop> {
@@ -244,6 +289,121 @@ class DatabaseHelper(private val context: Context) : SQLiteOpenHelper(context, D
             }
         } catch (e: Exception) {
             Log.e(TAG, "Error fetching loans: ${e.message}")
+        } finally {
+            cursor?.close()
+        }
+        return list
+    }
+
+    fun getAllFarmerExperiences(): List<FarmerExperience> {
+        val list = mutableListOf<FarmerExperience>()
+        val db = readableDatabase
+        var cursor: Cursor? = null
+        try {
+            cursor = db.rawQuery("SELECT * FROM farmer_experiences ORDER BY created_at DESC", null)
+            while (cursor.moveToNext()) {
+                val obsHiIdx = cursor.getColumnIndex("observation_hi")
+                val obsEnIdx = cursor.getColumnIndex("observation_en")
+                list.add(
+                    FarmerExperience(
+                        id = cursor.getString(cursor.getColumnIndexOrThrow("id")),
+                        cropId = cursor.getString(cursor.getColumnIndexOrThrow("crop_id")),
+                        cropName = cursor.getString(cursor.getColumnIndexOrThrow("crop_name")),
+                        state = cursor.getString(cursor.getColumnIndexOrThrow("state")),
+                        district = cursor.getString(cursor.getColumnIndexOrThrow("district")),
+                        observation = cursor.getString(cursor.getColumnIndexOrThrow("observation")),
+                        observationHi = if (obsHiIdx >= 0) cursor.getString(obsHiIdx) else null,
+                        observationEn = if (obsEnIdx >= 0) cursor.getString(obsEnIdx) else null,
+                        language = cursor.getString(cursor.getColumnIndexOrThrow("language")),
+                        createdAt = cursor.getString(cursor.getColumnIndexOrThrow("created_at"))
+                    )
+                )
+            }
+        } catch (e: Exception) {
+            Log.e(TAG, "Error fetching farmer experiences: ${e.message}")
+        } finally {
+            cursor?.close()
+        }
+        return list
+    }
+
+    fun getFarmerExperiencesByCrop(cropId: String): List<FarmerExperience> {
+        val list = mutableListOf<FarmerExperience>()
+        val db = readableDatabase
+        var cursor: Cursor? = null
+        try {
+            cursor = db.rawQuery("SELECT * FROM farmer_experiences WHERE crop_id = ? ORDER BY created_at DESC", arrayOf(cropId))
+            while (cursor.moveToNext()) {
+                val obsHiIdx = cursor.getColumnIndex("observation_hi")
+                val obsEnIdx = cursor.getColumnIndex("observation_en")
+                list.add(
+                    FarmerExperience(
+                        id = cursor.getString(cursor.getColumnIndexOrThrow("id")),
+                        cropId = cursor.getString(cursor.getColumnIndexOrThrow("crop_id")),
+                        cropName = cursor.getString(cursor.getColumnIndexOrThrow("crop_name")),
+                        state = cursor.getString(cursor.getColumnIndexOrThrow("state")),
+                        district = cursor.getString(cursor.getColumnIndexOrThrow("district")),
+                        observation = cursor.getString(cursor.getColumnIndexOrThrow("observation")),
+                        observationHi = if (obsHiIdx >= 0) cursor.getString(obsHiIdx) else null,
+                        observationEn = if (obsEnIdx >= 0) cursor.getString(obsEnIdx) else null,
+                        language = cursor.getString(cursor.getColumnIndexOrThrow("language")),
+                        createdAt = cursor.getString(cursor.getColumnIndexOrThrow("created_at"))
+                    )
+                )
+            }
+        } catch (e: Exception) {
+            Log.e(TAG, "Error fetching farmer experiences for $cropId: ${e.message}")
+        } finally {
+            cursor?.close()
+        }
+        return list
+    }
+
+    fun insertFarmerExperience(exp: FarmerExperience): Boolean {
+        val db = writableDatabase
+        return try {
+            val values = android.content.ContentValues().apply {
+                put("id", exp.id)
+                put("crop_id", exp.cropId)
+                put("crop_name", exp.cropName)
+                put("state", exp.state)
+                put("district", exp.district)
+                put("observation", exp.observation)
+                put("language", exp.language)
+                put("created_at", exp.createdAt)
+            }
+            db.insertWithOnConflict("farmer_experiences", null, values, SQLiteDatabase.CONFLICT_REPLACE) > 0
+        } catch (e: Exception) {
+            Log.e(TAG, "Error inserting farmer experience: ${e.message}")
+            false
+        }
+    }
+
+    fun getAllRAGKnowledge(): List<RAGKnowledgeRecord> {
+        val list = mutableListOf<RAGKnowledgeRecord>()
+        val db = readableDatabase
+        var cursor: Cursor? = null
+        try {
+            cursor = db.rawQuery("SELECT * FROM rag_knowledge ORDER BY id ASC", null)
+            while (cursor.moveToNext()) {
+                list.add(
+                    RAGKnowledgeRecord(
+                        id = cursor.getString(cursor.getColumnIndexOrThrow("id")),
+                        topic = cursor.getString(cursor.getColumnIndexOrThrow("topic")),
+                        cropId = cursor.getString(cursor.getColumnIndexOrThrow("crop_id")),
+                        questionEn = cursor.getString(cursor.getColumnIndexOrThrow("question_en")),
+                        questionHi = cursor.getString(cursor.getColumnIndexOrThrow("question_hi")),
+                        answerEn = cursor.getString(cursor.getColumnIndexOrThrow("answer_en")),
+                        answerHi = cursor.getString(cursor.getColumnIndexOrThrow("answer_hi")),
+                        source = cursor.getString(cursor.getColumnIndexOrThrow("source")),
+                        sourceUrl = cursor.getString(cursor.getColumnIndexOrThrow("source_url")),
+                        isVerified = cursor.getInt(cursor.getColumnIndexOrThrow("is_verified")) == 1,
+                        category = cursor.getString(cursor.getColumnIndexOrThrow("category"))
+                    )
+                )
+            }
+        } catch (e: Exception) {
+            Log.e(TAG, "Error fetching RAG knowledge: ${e.message}")
         } finally {
             cursor?.close()
         }

@@ -20,6 +20,14 @@ enum class VoiceMode {
     ENGLISH
 }
 
+enum class VoiceState {
+    IDLE,
+    RECORDING,
+    PROCESSING,
+    SPEAKING,
+    ERROR
+}
+
 class VoiceManager(private val context: Context) : TextToSpeech.OnInitListener {
 
     companion object {
@@ -29,6 +37,10 @@ class VoiceManager(private val context: Context) : TextToSpeech.OnInitListener {
     private var speechRecognizer: SpeechRecognizer? = null
     private var tts: TextToSpeech? = null
     private var isTtsReady = false
+    private var isHindiTtsAvailable = false
+
+    private val _voiceState = MutableStateFlow(VoiceState.IDLE)
+    val voiceState: StateFlow<VoiceState> = _voiceState.asStateFlow()
 
     private val _isListening = MutableStateFlow(false)
     val isListening: StateFlow<Boolean> = _isListening.asStateFlow()
@@ -41,6 +53,9 @@ class VoiceManager(private val context: Context) : TextToSpeech.OnInitListener {
 
     private val _voiceMode = MutableStateFlow(VoiceMode.AUTO)
     val voiceMode: StateFlow<VoiceMode> = _voiceMode.asStateFlow()
+
+    private val _lastError = MutableStateFlow<String?>(null)
+    val lastError: StateFlow<String?> = _lastError.asStateFlow()
 
     private var onSpeechResultCallback: ((String) -> Unit)? = null
 
@@ -55,30 +70,39 @@ class VoiceManager(private val context: Context) : TextToSpeech.OnInitListener {
                 setRecognitionListener(object : RecognitionListener {
                     override fun onReadyForSpeech(params: Bundle?) {
                         _isListening.value = true
+                        _voiceState.value = VoiceState.RECORDING
                     }
 
-                    override fun onBeginningOfSpeech() {}
+                    override fun onBeginningOfSpeech() {
+                        _voiceState.value = VoiceState.RECORDING
+                    }
+
                     override fun onRmsChanged(rmsdB: Float) {}
                     override fun onBufferReceived(buffer: ByteArray?) {}
 
                     override fun onEndOfSpeech() {
                         _isListening.value = false
+                        _voiceState.value = VoiceState.PROCESSING
                     }
 
                     override fun onError(error: Int) {
                         _isListening.value = false
                         val errorMsg = when (error) {
                             SpeechRecognizer.ERROR_NETWORK_TIMEOUT -> "Network timeout"
-                            SpeechRecognizer.ERROR_NO_MATCH -> "No speech match"
-                            SpeechRecognizer.ERROR_RECOGNIZER_BUSY -> "Busy"
-                            SpeechRecognizer.ERROR_INSUFFICIENT_PERMISSIONS -> "Permission required"
-                            else -> "Recognition error ($error)"
+                            SpeechRecognizer.ERROR_NETWORK -> "Offline speech pack may not be downloaded for this language."
+                            SpeechRecognizer.ERROR_NO_MATCH -> "No clear speech detected. Please speak closer to the mic."
+                            SpeechRecognizer.ERROR_RECOGNIZER_BUSY -> "Microphone busy"
+                            SpeechRecognizer.ERROR_INSUFFICIENT_PERMISSIONS -> "Microphone permission required"
+                            else -> "Voice recognition error ($error)"
                         }
                         Log.w(TAG, "Speech error: $errorMsg")
+                        _lastError.value = errorMsg
+                        _voiceState.value = VoiceState.ERROR
                     }
 
                     override fun onResults(results: Bundle?) {
                         _isListening.value = false
+                        _voiceState.value = VoiceState.IDLE
                         val matches = results?.getStringArrayList(SpeechRecognizer.RESULTS_RECOGNITION)
                         if (!matches.isNullOrEmpty()) {
                             val recognized = matches[0]
@@ -103,17 +127,32 @@ class VoiceManager(private val context: Context) : TextToSpeech.OnInitListener {
     override fun onInit(status: Int) {
         if (status == TextToSpeech.SUCCESS) {
             isTtsReady = true
+
+            // Verify offline Hindi TTS voice pack availability
+            val hindiLocale = Locale("hi", "IN")
+            val avail = tts?.isLanguageAvailable(hindiLocale)
+            isHindiTtsAvailable = (avail != TextToSpeech.LANG_NOT_SUPPORTED && avail != TextToSpeech.LANG_MISSING_DATA)
+
+            if (isHindiTtsAvailable) {
+                Log.i(TAG, "Offline Hindi TTS voice pack is available.")
+            } else {
+                Log.w(TAG, "Offline Hindi TTS pack missing on device. Falling back to default TTS voice.")
+            }
+
             tts?.setOnUtteranceProgressListener(object : UtteranceProgressListener() {
                 override fun onStart(utteranceId: String?) {
                     _isSpeaking.value = true
+                    _voiceState.value = VoiceState.SPEAKING
                 }
 
                 override fun onDone(utteranceId: String?) {
                     _isSpeaking.value = false
+                    _voiceState.value = VoiceState.IDLE
                 }
 
                 override fun onError(utteranceId: String?) {
                     _isSpeaking.value = false
+                    _voiceState.value = VoiceState.IDLE
                 }
             })
         }
@@ -127,10 +166,14 @@ class VoiceManager(private val context: Context) : TextToSpeech.OnInitListener {
         stopSpeaking()
         this.onSpeechResultCallback = onResult
         _transcription.value = null
+        _lastError.value = null
+        _voiceState.value = VoiceState.RECORDING
 
         val intent = Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH).apply {
             putExtra(RecognizerIntent.EXTRA_LANGUAGE_MODEL, RecognizerIntent.LANGUAGE_MODEL_FREE_FORM)
             putExtra(RecognizerIntent.EXTRA_PARTIAL_RESULTS, true)
+            // Enable offline recognition if device supports it
+            putExtra(RecognizerIntent.EXTRA_PREFER_OFFLINE, true)
 
             when (_voiceMode.value) {
                 VoiceMode.HINDI -> {
@@ -142,7 +185,9 @@ class VoiceManager(private val context: Context) : TextToSpeech.OnInitListener {
                     putExtra(RecognizerIntent.EXTRA_LANGUAGE_PREFERENCE, "en-IN")
                 }
                 VoiceMode.AUTO -> {
-                    putExtra(RecognizerIntent.EXTRA_LANGUAGE, Locale.getDefault().toLanguageTag())
+                    // Script and dialect aware AUTO mode
+                    putExtra(RecognizerIntent.EXTRA_LANGUAGE, "hi-IN")
+                    putExtra(RecognizerIntent.EXTRA_LANGUAGE_PREFERENCE, "hi-IN")
                     putExtra(RecognizerIntent.EXTRA_SUPPORTED_LANGUAGES, arrayListOf("hi-IN", "en-IN"))
                 }
             }
@@ -154,6 +199,7 @@ class VoiceManager(private val context: Context) : TextToSpeech.OnInitListener {
         } catch (e: Exception) {
             Log.e(TAG, "Failed to start listening: ${e.message}")
             _isListening.value = false
+            _voiceState.value = VoiceState.ERROR
         }
     }
 
@@ -164,21 +210,31 @@ class VoiceManager(private val context: Context) : TextToSpeech.OnInitListener {
             Log.e(TAG, "Error stopping listening: ${e.message}")
         } finally {
             _isListening.value = false
+            if (_voiceState.value == VoiceState.RECORDING) {
+                _voiceState.value = VoiceState.PROCESSING
+            }
         }
     }
 
-    fun speak(text: String, isHindi: Boolean = true) {
+    fun speak(text: String, forceHindi: Boolean? = null) {
         if (!isTtsReady || tts == null) return
         stopSpeaking()
 
-        val loc = if (isHindi || text.any { it.code in 0x0900..0x097F }) {
+        val shouldUseHindi = forceHindi ?: when (_voiceMode.value) {
+            VoiceMode.HINDI -> true
+            VoiceMode.ENGLISH -> false
+            VoiceMode.AUTO -> LanguageDetector.isHindiResponsePreferred(text, VoiceMode.AUTO)
+        }
+
+        val targetLocale = if (shouldUseHindi && isHindiTtsAvailable) {
             Locale("hi", "IN")
         } else {
             Locale("en", "IN")
         }
 
-        tts?.language = loc
-        tts?.setSpeechRate(0.92f) // Slightly relaxed pace for maximum farmer clarity
+        tts?.language = targetLocale
+        tts?.setSpeechRate(0.92f) // Relaxed pace for clear farmer listening
+        _voiceState.value = VoiceState.SPEAKING
         tts?.speak(text, TextToSpeech.QUEUE_FLUSH, null, "krishi_tts_${System.currentTimeMillis()}")
     }
 
@@ -186,6 +242,9 @@ class VoiceManager(private val context: Context) : TextToSpeech.OnInitListener {
         if (isTtsReady) {
             tts?.stop()
             _isSpeaking.value = false
+            if (_voiceState.value == VoiceState.SPEAKING) {
+                _voiceState.value = VoiceState.IDLE
+            }
         }
     }
 
