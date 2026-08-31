@@ -135,5 +135,17 @@ async def exotel_webhook(
 
     advisory_text = ai_resp.answer.strip()
 
+    # Track session
+    telephony_service._sessions[sid] = {
+        "call_sid": sid,
+        "caller_phone": caller,
+        "start_time": datetime.datetime.now(datetime.timezone.utc).strftime("%Y-%m-%d %H:%M:%S UTC"),
+        "status": "completed",
+        "queries": [query],
+        "answers": [advisory_text],
+        "last_topic": ai_resp.detected_intent,
+        "sms_sent": False
+    }
+
     # Return plain text response which Exotel Passthru applet can speak via Text-to-Speech
     return Response(content=advisory_text, media_type="text/plain; charset=utf-8")
