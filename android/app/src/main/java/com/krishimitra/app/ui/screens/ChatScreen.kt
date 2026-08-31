@@ -22,6 +22,15 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.pointer.pointerInteropFilter
 import androidx.compose.ui.res.stringResource
+import android.Manifest
+import android.app.Activity
+import android.content.pm.PackageManager
+import android.speech.RecognizerIntent
+import android.util.Log
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.ui.platform.LocalContext
+import androidx.core.content.ContextCompat
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -39,8 +48,15 @@ fun ChatScreen(
     aiRouter: HybridAIRouter,
     voiceManager: VoiceManager
 ) {
+    val context = LocalContext.current
     val coroutineScope = rememberCoroutineScope()
     val listState = rememberLazyListState()
+
+    var hasAudioPermission by remember {
+        mutableStateOf(
+            ContextCompat.checkSelfPermission(context, Manifest.permission.RECORD_AUDIO) == PackageManager.PERMISSION_GRANTED
+        )
+    }
 
     var inputText by remember { mutableStateOf("") }
     val isListening by voiceManager.isListening.collectAsState()
@@ -94,6 +110,34 @@ fun ChatScreen(
             messages.add(reply)
             listState.animateScrollToItem(messages.size - 1)
             voiceManager.speak(reply.text, forceHindi = (forceLang == "hi"))
+        }
+    }
+
+    val speechIntentLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.StartActivityForResult()
+    ) { result ->
+        if (result.resultCode == Activity.RESULT_OK && result.data != null) {
+            val matches = result.data?.getStringArrayListExtra(RecognizerIntent.EXTRA_RESULTS)
+            if (!matches.isNullOrEmpty()) {
+                sendMessage(matches[0])
+            }
+        }
+    }
+
+    val audioPermissionLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.RequestPermission()
+    ) { granted ->
+        hasAudioPermission = granted
+        if (granted) {
+            try {
+                voiceManager.startListening { query -> sendMessage(query) }
+            } catch (e: Exception) {
+                try {
+                    speechIntentLauncher.launch(voiceManager.createSpeechIntent())
+                } catch (ex: Exception) {
+                    Log.e("ChatScreen", "Speech launch error: ${ex.message}")
+                }
+            }
         }
     }
 
@@ -287,14 +331,24 @@ fun ChatScreen(
                     )
                 }
             } else {
-                // Responsive Tap-to-Talk / Hold-to-Talk Mic Button
+                // Responsive Tap-to-Talk Mic Button
                 IconButton(
                     onClick = {
-                        if (isListening) {
+                        if (!hasAudioPermission) {
+                            audioPermissionLauncher.launch(Manifest.permission.RECORD_AUDIO)
+                        } else if (isListening) {
                             voiceManager.stopListening()
                         } else {
-                            voiceManager.startListening { query ->
-                                sendMessage(query)
+                            try {
+                                voiceManager.startListening { query ->
+                                    sendMessage(query)
+                                }
+                            } catch (e: Exception) {
+                                try {
+                                    speechIntentLauncher.launch(voiceManager.createSpeechIntent())
+                                } catch (ex: Exception) {
+                                    Log.e("ChatScreen", "Could not launch speech intent: ${ex.message}")
+                                }
                             }
                         }
                     },
@@ -312,6 +366,38 @@ fun ChatScreen(
                 }
             }
 
+        }
+
+        // Voice Error / Alternate Input Helper
+        if (lastVoiceError != null && !isListening) {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .background(Color(0xFFFFF3E0))
+                    .padding(horizontal = 12.dp, vertical = 4.dp),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    text = lastVoiceError ?: "",
+                    color = Color(0xFFE65100),
+                    fontSize = 11.sp,
+                    modifier = Modifier.weight(1f),
+                    maxLines = 1
+                )
+                TextButton(
+                    onClick = {
+                        try {
+                            speechIntentLauncher.launch(voiceManager.createSpeechIntent())
+                        } catch (e: Exception) {
+                            Log.e("ChatScreen", "Fallback launch failed: ${e.message}")
+                        }
+                    },
+                    contentPadding = PaddingValues(horizontal = 8.dp, vertical = 2.dp)
+                ) {
+                    Text("वॉयस डायलॉग", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = GreenPrimary)
+                }
+            }
         }
     }
 }

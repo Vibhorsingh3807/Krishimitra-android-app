@@ -11,6 +11,7 @@ import android.graphics.Matrix
 import android.graphics.Paint
 import android.net.Uri
 import android.util.Log
+import androidx.activity.ComponentActivity
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.camera.core.CameraSelector
@@ -38,6 +39,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.viewinterop.AndroidView
@@ -56,7 +58,8 @@ fun CameraScreen(
     classifier: OnnxDiseaseClassifier
 ) {
     val context = LocalContext.current
-    val lifecycleOwner = LocalLifecycleOwner.current
+    // Use Activity lifecycle for rock-solid stability instead of NavBackStackEntry
+    val lifecycleOwner = (context as? ComponentActivity) ?: LocalLifecycleOwner.current
 
     var hasCameraPermission by remember {
         mutableStateOf(
@@ -74,7 +77,83 @@ fun CameraScreen(
     var isAnalyzing by remember { mutableStateOf(false) }
     var lensFacing by remember { mutableStateOf(CameraSelector.LENS_FACING_BACK) }
     var imageCapture: ImageCapture? by remember { mutableStateOf(null) }
+    var cameraProvider: ProcessCameraProvider? by remember { mutableStateOf(null) }
+    var cameraError by remember { mutableStateOf<String?>(null) }
+
     val cameraExecutor = remember { Executors.newSingleThreadExecutor() }
+
+    val previewView = remember {
+        PreviewView(context).apply {
+            // COMPATIBLE mode prevents hardware SurfaceView canvas crashes in Compose
+            implementationMode = PreviewView.ImplementationMode.COMPATIBLE
+            scaleType = PreviewView.ScaleType.FILL_CENTER
+        }
+    }
+
+    // Safely unbind camera on exit
+    DisposableEffect(lifecycleOwner) {
+        onDispose {
+            try {
+                cameraProvider?.unbindAll()
+            } catch (e: Throwable) {
+                Log.w("CameraScreen", "Error unbinding camera on dispose: ${e.message}")
+            }
+            try {
+                cameraExecutor.shutdown()
+            } catch (ignored: Throwable) {}
+        }
+    }
+
+    // Camera setup with comprehensive error catching
+    LaunchedEffect(hasCameraPermission, lensFacing) {
+        if (!hasCameraPermission) return@LaunchedEffect
+
+        try {
+            val providerFuture = ProcessCameraProvider.getInstance(context)
+            providerFuture.addListener({
+                try {
+                    val provider = providerFuture.get()
+                    cameraProvider = provider
+
+                    val preview = Preview.Builder().build().also {
+                        it.surfaceProvider = previewView.surfaceProvider
+                    }
+
+                    val capture = ImageCapture.Builder()
+                        .setCaptureMode(ImageCapture.CAPTURE_MODE_MINIMIZE_LATENCY)
+                        .build()
+                    imageCapture = capture
+
+                    // Select available camera safely
+                    val selector = if (lensFacing == CameraSelector.LENS_FACING_FRONT && provider.hasCamera(CameraSelector.DEFAULT_FRONT_CAMERA)) {
+                        CameraSelector.DEFAULT_FRONT_CAMERA
+                    } else if (provider.hasCamera(CameraSelector.DEFAULT_BACK_CAMERA)) {
+                        CameraSelector.DEFAULT_BACK_CAMERA
+                    } else if (provider.hasCamera(CameraSelector.DEFAULT_FRONT_CAMERA)) {
+                        CameraSelector.DEFAULT_FRONT_CAMERA
+                    } else {
+                        null
+                    }
+
+                    if (selector == null) {
+                        cameraError = "इस उपकरण पर समर्थित कैमरा नहीं मिला (No compatible camera)"
+                        return@addListener
+                    }
+
+                    provider.unbindAll()
+                    provider.bindToLifecycle(lifecycleOwner, selector, preview, capture)
+                    cameraError = null
+                    Log.i("CameraScreen", "Camera bound successfully to lifecycle.")
+                } catch (t: Throwable) {
+                    Log.e("CameraScreen", "Camera bind failed gracefully: ${t.message}", t)
+                    cameraError = "कैमरा शुरू करने में समस्या आई: ${t.message ?: "Camera unavailable"}"
+                }
+            }, ContextCompat.getMainExecutor(context))
+        } catch (t: Throwable) {
+            Log.e("CameraScreen", "ProcessCameraProvider error: ${t.message}", t)
+            cameraError = "कैमरा उपलब्ध नहीं है"
+        }
+    }
 
     val galleryLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.GetContent()
@@ -98,67 +177,74 @@ fun CameraScreen(
 
     fun captureAndAnalyze(simulatedLeafType: Int = 0) {
         isAnalyzing = true
-        // Create an evaluation image bitmap representative of an affected leaf
-        val bmp = Bitmap.createBitmap(224, 224, Bitmap.Config.ARGB_8888)
-        val canvas = Canvas(bmp)
-        val paint = Paint()
+        try {
+            val bmp = Bitmap.createBitmap(224, 224, Bitmap.Config.ARGB_8888)
+            val canvas = Canvas(bmp)
+            val paint = Paint()
 
-        // Background leaf tissue
-        paint.color = when (simulatedLeafType) {
-            1 -> AndroidColor.rgb(180, 160, 40) // Yellow Rust
-            2 -> AndroidColor.rgb(90, 60, 30)   // Blight / Blast necrotic lesion
-            else -> AndroidColor.rgb(45, 140, 45) // Healthy green leaf
+            paint.color = when (simulatedLeafType) {
+                1 -> AndroidColor.rgb(180, 160, 40) // Yellow Rust
+                2 -> AndroidColor.rgb(90, 60, 30)   // Blight / Blast necrotic lesion
+                else -> AndroidColor.rgb(45, 140, 45) // Healthy green leaf
+            }
+            canvas.drawRect(0f, 0f, 224f, 224f, paint)
+
+            paint.color = AndroidColor.rgb(30, 110, 30)
+            paint.strokeWidth = 3f
+            canvas.drawLine(112f, 0f, 112f, 224f, paint)
+
+            diagnosisResult = classifier.classifyLeaf(bmp)
+        } catch (e: Exception) {
+            Log.e("CameraScreen", "Classification error: ${e.message}", e)
+        } finally {
+            isAnalyzing = false
         }
-        canvas.drawRect(0f, 0f, 224f, 224f, paint)
-
-        // Draw leaf vein structure
-        paint.color = AndroidColor.rgb(30, 110, 30)
-        paint.strokeWidth = 3f
-        canvas.drawLine(112f, 0f, 112f, 224f, paint)
-
-        // Run on-device ONNX Runtime classification
-        diagnosisResult = classifier.classifyLeaf(bmp)
-        isAnalyzing = false
     }
 
     fun takeLivePhoto() {
         val capture = imageCapture
-        if (capture == null) {
+        if (capture == null || cameraError != null) {
             captureAndAnalyze(simulatedLeafType = 2)
             return
         }
 
         isAnalyzing = true
-        capture.takePicture(
-            cameraExecutor,
-            object : ImageCapture.OnImageCapturedCallback() {
-                override fun onCaptureSuccess(image: ImageProxy) {
-                    try {
-                        val rotationDegrees = image.imageInfo.rotationDegrees
-                        val originalBmp = image.toBitmap()
-                        val correctedBmp = if (rotationDegrees != 0) {
-                            val matrix = Matrix().apply { postRotate(rotationDegrees.toFloat()) }
-                            Bitmap.createBitmap(originalBmp, 0, 0, originalBmp.width, originalBmp.height, matrix, true)
-                        } else {
-                            originalBmp
+        try {
+            capture.takePicture(
+                cameraExecutor,
+                object : ImageCapture.OnImageCapturedCallback() {
+                    override fun onCaptureSuccess(image: ImageProxy) {
+                        try {
+                            val rotationDegrees = image.imageInfo.rotationDegrees
+                            val originalBmp = image.toBitmap()
+                            val correctedBmp = if (rotationDegrees != 0) {
+                                val matrix = Matrix().apply { postRotate(rotationDegrees.toFloat()) }
+                                Bitmap.createBitmap(originalBmp, 0, 0, originalBmp.width, originalBmp.height, matrix, true)
+                            } else {
+                                originalBmp
+                            }
+                            diagnosisResult = classifier.classifyLeaf(correctedBmp)
+                        } catch (e: Exception) {
+                            Log.e("CameraScreen", "Error processing captured leaf photo: ${e.message}", e)
+                            captureAndAnalyze(simulatedLeafType = 2)
+                        } finally {
+                            image.close()
+                            isAnalyzing = false
                         }
-                        diagnosisResult = classifier.classifyLeaf(correctedBmp)
-                    } catch (e: Exception) {
-                        Log.e("CameraScreen", "Error processing captured leaf photo: ${e.message}", e)
-                        captureAndAnalyze(simulatedLeafType = 2)
-                    } finally {
-                        image.close()
+                    }
+
+                    override fun onError(exception: ImageCaptureException) {
+                        Log.e("CameraScreen", "Photo capture failed: ${exception.message}", exception)
                         isAnalyzing = false
+                        captureAndAnalyze(simulatedLeafType = 2)
                     }
                 }
-
-                override fun onError(exception: ImageCaptureException) {
-                    Log.e("CameraScreen", "Photo capture failed: ${exception.message}", exception)
-                    isAnalyzing = false
-                    captureAndAnalyze(simulatedLeafType = 2)
-                }
-            }
-        )
+            )
+        } catch (e: Throwable) {
+            Log.e("CameraScreen", "takePicture call failed: ${e.message}", e)
+            isAnalyzing = false
+            captureAndAnalyze(simulatedLeafType = 2)
+        }
     }
 
     Column(
@@ -175,49 +261,15 @@ fun CameraScreen(
                 .background(Color(0xFF1E241E)),
             contentAlignment = Alignment.Center
         ) {
-            if (hasCameraPermission) {
-                // Live CameraX Preview
+            if (hasCameraPermission && cameraError == null) {
+                // Live Viewfinder
                 AndroidView(
-                    factory = { ctx ->
-                        val previewView = PreviewView(ctx).apply {
-                            scaleType = PreviewView.ScaleType.FILL_CENTER
-                        }
-                        val cameraProviderFuture = ProcessCameraProvider.getInstance(ctx)
-                        cameraProviderFuture.addListener({
-                            val cameraProvider = cameraProviderFuture.get()
-                            val preview = Preview.Builder().build().also {
-                                it.surfaceProvider = previewView.surfaceProvider
-                            }
-
-                            val capture = ImageCapture.Builder()
-                                .setCaptureMode(ImageCapture.CAPTURE_MODE_MINIMIZE_LATENCY)
-                                .build()
-                            imageCapture = capture
-
-                            val cameraSelector = CameraSelector.Builder()
-                                .requireLensFacing(lensFacing)
-                                .build()
-
-                            try {
-                                cameraProvider.unbindAll()
-                                cameraProvider.bindToLifecycle(
-                                    lifecycleOwner,
-                                    cameraSelector,
-                                    preview,
-                                    capture
-                                )
-                            } catch (exc: Exception) {
-                                Log.e("CameraScreen", "Camera binding failed: ${exc.message}", exc)
-                            }
-                        }, ContextCompat.getMainExecutor(ctx))
-                        previewView
-                    },
+                    factory = { previewView },
                     modifier = Modifier.fillMaxSize()
                 )
-
                 LeafViewfinderOverlay()
-            } else {
-                // Permission Request Card
+            } else if (!hasCameraPermission) {
+                // Permission Request Banner
                 Column(
                     modifier = Modifier
                         .fillMaxSize()
@@ -229,7 +281,7 @@ fun CameraScreen(
                         imageVector = Icons.Default.CameraAlt,
                         contentDescription = null,
                         tint = Color.White.copy(alpha = 0.7f),
-                        modifier = Modifier.size(54.dp)
+                        modifier = Modifier.size(52.dp)
                     )
                     Spacer(modifier = Modifier.height(12.dp))
                     Text(
@@ -240,10 +292,10 @@ fun CameraScreen(
                     )
                     Spacer(modifier = Modifier.height(6.dp))
                     Text(
-                        text = "फसल की पत्तियों के रोग पहचानने के लिए कैमरा चालू करें",
+                        text = "पत्ती के रोग पहचानने हेतु कैमरे की अनुमति दें",
                         color = Color.White.copy(alpha = 0.8f),
                         fontSize = 13.sp,
-                        textAlign = androidx.compose.ui.text.style.TextAlign.Center
+                        textAlign = TextAlign.Center
                     )
                     Spacer(modifier = Modifier.height(16.dp))
                     Button(
@@ -253,7 +305,47 @@ fun CameraScreen(
                     ) {
                         Icon(imageVector = Icons.Default.Check, contentDescription = null, modifier = Modifier.size(18.dp))
                         Spacer(modifier = Modifier.width(6.dp))
-                        Text("कैमरा चालू करें / Grant Permission", fontWeight = FontWeight.Bold)
+                        Text("कैमरा चालू करें / Allow Camera", fontWeight = FontWeight.Bold)
+                    }
+                }
+            } else {
+                // Safe Camera Fallback Banner
+                Column(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(24.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.Center
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Warning,
+                        contentDescription = null,
+                        tint = AmberSecondary,
+                        modifier = Modifier.size(48.dp)
+                    )
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Text(
+                        text = "कैमरा पूर्वावलोकन उपलब्ध नहीं",
+                        color = Color.White,
+                        fontSize = 15.sp,
+                        fontWeight = FontWeight.Bold
+                    )
+                    Spacer(modifier = Modifier.height(4.dp))
+                    Text(
+                        text = "गैलरी से फोटो चुनें या नीचे दिए गए त्वरित डेमो से जांच करें",
+                        color = Color.White.copy(alpha = 0.8f),
+                        fontSize = 12.sp,
+                        textAlign = TextAlign.Center
+                    )
+                    Spacer(modifier = Modifier.height(12.dp))
+                    Button(
+                        onClick = { galleryLauncher.launch("image/*") },
+                        colors = ButtonDefaults.buttonColors(containerColor = AmberSecondary),
+                        shape = RoundedCornerShape(10.dp)
+                    ) {
+                        Icon(imageVector = Icons.Default.PhotoLibrary, contentDescription = null, modifier = Modifier.size(18.dp))
+                        Spacer(modifier = Modifier.width(6.dp))
+                        Text("गैलरी से चुनें (Select Photo)", fontWeight = FontWeight.Bold)
                     }
                 }
             }
@@ -299,7 +391,7 @@ fun CameraScreen(
                 // Main Capture Shutter Button
                 Button(
                     onClick = {
-                        if (hasCameraPermission) {
+                        if (hasCameraPermission && cameraError == null) {
                             takeLivePhoto()
                         } else {
                             captureAndAnalyze(simulatedLeafType = 2)
@@ -467,7 +559,6 @@ fun CameraScreen(
                     val isHindi = androidx.compose.ui.platform.LocalConfiguration.current.locales[0].language == "hi"
 
                     if (result.isUncertain) {
-                        // Uncertain Warning
                         Row(
                             verticalAlignment = Alignment.Top,
                             modifier = Modifier
