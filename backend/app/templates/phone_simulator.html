@@ -1,0 +1,662 @@
+<!DOCTYPE html>
+<html lang="hi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>KrishiMitra — AI Kisan Phone Helpline Simulator</title>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700&family=Noto+Sans+Devanagari:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary: #10B981;
+            --primary-dark: #059669;
+            --danger: #EF4444;
+            --bg-dark: #0F172A;
+            --card-bg: #1E293B;
+            --text-light: #F8FAFC;
+            --text-muted: #94A3B8;
+            --accent: #F59E0B;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Outfit', 'Noto Sans Devanagari', sans-serif;
+        }
+
+        body {
+            background: linear-gradient(135deg, #090D16 0%, #111827 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+            color: var(--text-light);
+        }
+
+        .container {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 32px;
+            max-width: 960px;
+            width: 100%;
+            justify-content: center;
+            align-items: flex-start;
+        }
+
+        /* Phone Device Styling */
+        .phone-case {
+            width: 360px;
+            height: 700px;
+            background: #020617;
+            border-radius: 44px;
+            border: 8px solid #334155;
+            box-shadow: 0 25px 60px rgba(0, 0, 0, 0.7), 0 0 40px rgba(16, 185, 129, 0.15);
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            position: relative;
+        }
+
+        .phone-notch {
+            width: 140px;
+            height: 24px;
+            background: #1E293B;
+            margin: 0 auto;
+            border-bottom-left-radius: 14px;
+            border-bottom-right-radius: 14px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            z-index: 10;
+        }
+
+        .notch-camera {
+            width: 8px;
+            height: 8px;
+            background: #020617;
+            border-radius: 50%;
+        }
+
+        .notch-speaker {
+            width: 40px;
+            height: 4px;
+            background: #475569;
+            border-radius: 2px;
+        }
+
+        .phone-screen {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            padding: 24px 20px;
+            background: linear-gradient(180deg, #0F172A 0%, #1E293B 100%);
+            position: relative;
+        }
+
+        .phone-header {
+            text-align: center;
+            margin-top: 12px;
+        }
+
+        .helpline-title {
+            font-size: 13px;
+            color: var(--primary);
+            text-transform: uppercase;
+            letter-spacing: 1.5px;
+            font-weight: 700;
+        }
+
+        .phone-number {
+            font-size: 24px;
+            font-weight: 700;
+            margin-top: 4px;
+            color: #FFFFFF;
+        }
+
+        .call-status {
+            font-size: 14px;
+            color: var(--text-muted);
+            margin-top: 4px;
+        }
+
+        .call-status.active {
+            color: var(--primary);
+            font-weight: 600;
+        }
+
+        /* Waveform Animation */
+        .waveform {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+            height: 60px;
+            margin: 20px 0;
+            visibility: hidden;
+        }
+
+        .waveform.active {
+            visibility: visible;
+        }
+
+        .wave-bar {
+            width: 5px;
+            height: 10px;
+            background: var(--primary);
+            border-radius: 3px;
+            animation: wave 1s ease-in-out infinite;
+        }
+
+        .wave-bar:nth-child(2) { animation-delay: 0.15s; }
+        .wave-bar:nth-child(3) { animation-delay: 0.3s; }
+        .wave-bar:nth-child(4) { animation-delay: 0.45s; }
+        .wave-bar:nth-child(5) { animation-delay: 0.6s; }
+
+        @keyframes wave {
+            0%, 100% { height: 10px; }
+            50% { height: 45px; }
+        }
+
+        /* Dialogue Box */
+        .dialogue-box {
+            flex: 1;
+            background: rgba(15, 23, 42, 0.7);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 16px;
+            padding: 14px;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            font-size: 13px;
+            line-height: 1.5;
+        }
+
+        .dialogue-bubble {
+            padding: 10px 14px;
+            border-radius: 12px;
+            max-width: 90%;
+            animation: fadeIn 0.3s ease;
+        }
+
+        .dialogue-bubble.ai {
+            background: rgba(16, 185, 129, 0.15);
+            border-left: 3px solid var(--primary);
+            align-self: flex-start;
+            color: #ECFDF5;
+        }
+
+        .dialogue-bubble.user {
+            background: rgba(59, 130, 246, 0.2);
+            border-right: 3px solid #3B82F6;
+            align-self: flex-end;
+            color: #EFF6FF;
+        }
+
+        /* Controls */
+        .call-controls {
+            display: flex;
+            justify-content: center;
+            gap: 24px;
+            margin-top: 16px;
+        }
+
+        .call-btn {
+            width: 64px;
+            height: 64px;
+            border-radius: 50%;
+            border: none;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.4);
+        }
+
+        .call-btn:hover {
+            transform: scale(1.08);
+        }
+
+        .call-btn.start {
+            background: var(--primary);
+            color: white;
+        }
+
+        .call-btn.end {
+            background: var(--danger);
+            color: white;
+            display: none;
+        }
+
+        .mic-btn {
+            width: 52px;
+            height: 52px;
+            border-radius: 50%;
+            border: 2px solid rgba(255, 255, 255, 0.2);
+            background: #334155;
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            align-self: center;
+            display: none;
+        }
+
+        .mic-btn.listening {
+            background: var(--danger);
+            animation: pulse 1s infinite;
+        }
+
+        @keyframes pulse {
+            0% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.6); }
+            70% { box-shadow: 0 0 0 15px rgba(239, 68, 68, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0); }
+        }
+
+        /* Quick Questions & SMS Panel */
+        .side-panel {
+            flex: 1;
+            min-width: 320px;
+            max-width: 480px;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        .panel-card {
+            background: var(--card-bg);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 20px;
+            padding: 20px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+        }
+
+        .card-title {
+            font-size: 16px;
+            font-weight: 700;
+            color: #FFFFFF;
+            margin-bottom: 12px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .chip-list {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .chip {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 10px;
+            padding: 10px 14px;
+            font-size: 13px;
+            color: var(--text-light);
+            cursor: pointer;
+            transition: all 0.2s ease;
+            text-align: left;
+        }
+
+        .chip:hover {
+            background: rgba(16, 185, 129, 0.15);
+            border-color: var(--primary);
+            transform: translateX(4px);
+        }
+
+        .sms-box {
+            background: #020617;
+            border: 1px solid #334155;
+            border-radius: 12px;
+            padding: 14px;
+            font-size: 13px;
+            color: #E2E8F0;
+            line-height: 1.6;
+            min-height: 110px;
+            white-space: pre-line;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(6px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <!-- Virtual Phone Hardware Simulator -->
+    <div class="phone-case">
+        <div class="phone-notch">
+            <div class="notch-camera"></div>
+            <div class="notch-speaker"></div>
+        </div>
+
+        <div class="phone-screen">
+            <div class="phone-header">
+                <div class="helpline-title">कृषिमित्र किसान हेल्पलाइन</div>
+                <div class="phone-number">1800-KRISHI (Toll Free)</div>
+                <div id="callStatus" class="call-status">कॉल करने के लिए नीचे हरा बटन दबाएं</div>
+            </div>
+
+            <div id="waveform" class="waveform">
+                <div class="wave-bar"></div>
+                <div class="wave-bar"></div>
+                <div class="wave-bar"></div>
+                <div class="wave-bar"></div>
+                <div class="wave-bar"></div>
+            </div>
+
+            <div id="dialogueBox" class="dialogue-box">
+                <div class="dialogue-bubble ai">
+                    🌾 नमस्ते किसान भाई! यह कृषिमित्र फोन हेल्पलाइन का इंटरैक्टिव सिम्युलेटर है। बिना किसी ऐप या इंटरनेट के किसान सीधे फोन लगाकर कैसे बात करते हैं, इसका परीक्षण करें।
+                </div>
+            </div>
+
+            <div class="call-controls">
+                <button id="startCallBtn" class="call-btn start" onclick="startHelplineCall()" title="कॉल शुरू करें">
+                    <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"></path>
+                    </svg>
+                </button>
+
+                <button id="micBtn" class="mic-btn" onclick="toggleSpeech()" title="माइक पर बोलें">
+                    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"></path>
+                        <path d="M19 10v2a7 7 0 0 1-14 0v-2"></path>
+                        <line x1="12" y1="19" x2="12" y2="23"></line>
+                        <line x1="8" y1="23" x2="16" y2="23"></line>
+                    </svg>
+                </button>
+
+                <button id="endCallBtn" class="call-btn end" onclick="endHelplineCall()" title="कॉल समाप्त करें">
+                    <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M10.68 13.31a16 16 0 0 0 3.41 2.6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7 2 2 0 0 1 1.72 2v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.42 19.42 0 0 1-3.33-2.67m-2.67-3.34a19.79 19.79 0 0 1-3.07-8.63A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91"></path>
+                        <line x1="23" y1="1" x2="1" y2="23"></line>
+                    </svg>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Side Testing & SMS Panel -->
+    <div class="side-panel">
+        <!-- 1-Click Questions -->
+        <div class="panel-card">
+            <div class="card-title">
+                <span>⚡ एक क्लिक से सवाल पूछें (त्वरित परीक्षण)</span>
+            </div>
+            <div class="chip-list">
+                <div class="chip" onclick="askPredefined('धान में कौन सी खाद डालें?')">
+                    🌾 "धान में कौन सी खाद डालें?"
+                </div>
+                <div class="chip" onclick="askPredefined('गेहूं की बुवाई का सही समय और तापमान क्या है?')">
+                    🌱 "गेहूं की बुवाई का सही समय और तापमान क्या है?"
+                </div>
+                <div class="chip" onclick="askPredefined('सरसों में माहू कीट का उपचार क्या है?')">
+                    🐛 "सरसों में माहू कीट का उपचार क्या है?"
+                </div>
+                <div class="chip" onclick="askPredefined('टमाटर में अगेती झुलसा का क्या इलाज है?')">
+                    🍅 "टमाटर में अगेती झुलसा का क्या इलाज है?"
+                </div>
+                <div class="chip" onclick="askPredefined('पीएम किसान योजना का लाभ कैसे मिलेगा?')">
+                    🏛️ "पीएम किसान योजना का लाभ कैसे मिलेगा?"
+                </div>
+            </div>
+        </div>
+
+        <!-- Simulated SMS Inbox -->
+        <div class="panel-card">
+            <div class="card-title">
+                <span>📩 किसान के फोन पर आया एसएमएस परामर्श</span>
+            </div>
+            <div id="smsInbox" class="sms-box">
+                कॉल समाप्त होने के बाद आपके प्रश्न की संपूर्ण कृषि सलाह का एसएमएस सारांश यहाँ स्वतः प्रदर्शित होगा...
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    let isCallActive = false;
+    let recognition = null;
+    let isListening = false;
+    let callTimer = null;
+    let callSeconds = 0;
+    let currentCallSid = "CALL_SIM_" + Date.now();
+    let callerPhone = "+919990565376";
+
+    // Initialize Web Speech API for Hindi voice recognition
+    if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
+        const SpeechRec = window.SpeechRecognition || window.webkitSpeechRecognition;
+        recognition = new SpeechRec();
+        recognition.lang = 'hi-IN';
+        recognition.continuous = false;
+        recognition.interimResults = false;
+
+        recognition.onresult = function(event) {
+            const spokenText = event.results[0][0].transcript;
+            stopListeningAnimation();
+            addUserDialogue(spokenText);
+            sendQuestionToBackend(spokenText);
+        };
+
+        recognition.onerror = function() {
+            stopListeningAnimation();
+            speakText("माफ़ कीजिए, आवाज़ स्पष्ट नहीं आई। कृपया दोबारा बोलें।");
+        };
+
+        recognition.onend = function() {
+            stopListeningAnimation();
+        };
+    }
+
+    function speakText(text, callback) {
+        if ('speechSynthesis' in window) {
+            window.speechSynthesis.cancel();
+            const utterance = new SpeechSynthesisUtterance(text);
+            utterance.lang = 'hi-IN';
+            utterance.rate = 0.95;
+
+            // Pick Hindi voice if available
+            const voices = window.speechSynthesis.getVoices();
+            const hindiVoice = voices.find(v => v.lang.includes('hi') || v.name.includes('Hindi') || v.name.includes('India'));
+            if (hindiVoice) utterance.voice = hindiVoice;
+
+            document.getElementById('waveform').classList.add('active');
+
+            utterance.onend = function() {
+                document.getElementById('waveform').classList.remove('active');
+                if (callback) callback();
+            };
+
+            window.speechSynthesis.speak(utterance);
+        } else if (callback) {
+            callback();
+        }
+    }
+
+    function startHelplineCall() {
+        isCallActive = true;
+        currentCallSid = "CALL_SIM_" + Date.now();
+        callSeconds = 0;
+
+        document.getElementById('startCallBtn').style.display = 'none';
+        document.getElementById('endCallBtn').style.display = 'flex';
+        document.getElementById('micBtn').style.display = 'flex';
+        document.getElementById('callStatus').className = 'call-status active';
+        document.getElementById('callStatus').innerText = 'कॉल कनेक्टेड (00:00)';
+
+        callTimer = setInterval(() => {
+            callSeconds++;
+            const mins = String(Math.floor(callSeconds / 60)).padStart(2, '0');
+            const secs = String(callSeconds % 60).padStart(2, '0');
+            document.getElementById('callStatus').innerText = `कॉल कनेक्टेड (${mins}:${secs})`;
+        }, 1000);
+
+        // Fetch initial greeting from backend
+        const formData = new URLSearchParams();
+        formData.append("CallSid", currentCallSid);
+        formData.append("From", callerPhone);
+
+        fetch("/api/v1/telephony/voice", {
+            method: "POST",
+            body: formData,
+            headers: { "Content-Type": "application/x-www-form-urlencoded" }
+        })
+        .then(res => res.text())
+        .then(xml => {
+            const parser = new DOMParser();
+            const xmlDoc = parser.parseFromString(xml, "text/xml");
+            const sayTags = xmlDoc.getElementsByTagName("Say");
+            const greeting = sayTags.length > 0 ? sayTags[0].textContent : "नमस्ते! कृषिमित्र हेल्पलाइन में आपका स्वागत है।";
+            
+            addAIDialogue(greeting);
+            speakText(greeting, () => {
+                // Auto trigger mic after greeting
+                startListening();
+            });
+        })
+        .catch(err => {
+            const fallback = "नमस्ते! कृषिमित्र किसान हेल्पलाइन में आपका स्वागत है। आप अपनी फसल के बारे में कोई भी प्रश्न पूछ सकते हैं।";
+            addAIDialogue(fallback);
+            speakText(fallback);
+        });
+    }
+
+    function endHelplineCall() {
+        if (!isCallActive) return;
+        isCallActive = false;
+        clearInterval(callTimer);
+        window.speechSynthesis.cancel();
+        stopListeningAnimation();
+
+        document.getElementById('startCallBtn').style.display = 'flex';
+        document.getElementById('endCallBtn').style.display = 'none';
+        document.getElementById('micBtn').style.display = 'none';
+        document.getElementById('waveform').classList.remove('active');
+        document.getElementById('callStatus').className = 'call-status';
+        document.getElementById('callStatus').innerText = 'कॉल समाप्त (कॉल करने के लिए हरा बटन दबाएं)';
+
+        // Trigger call status webhook to generate SMS summary
+        const formData = new URLSearchParams();
+        formData.append("CallSid", currentCallSid);
+        formData.append("CallStatus", "completed");
+        formData.append("CallDuration", String(callSeconds));
+
+        fetch("/api/v1/telephony/status", {
+            method: "POST",
+            body: formData,
+            headers: { "Content-Type": "application/x-www-form-urlencoded" }
+        })
+        .then(() => {
+            // Update SMS inbox in UI
+            fetch("/api/v1/telephony/sessions")
+            .then(r => r.json())
+            .then(sessions => {
+                const s = sessions.find(item => item.call_sid === currentCallSid);
+                if (s && s.queries && s.queries.length > 0) {
+                    const lastQ = s.queries[s.queries.length - 1];
+                    document.getElementById('smsInbox').innerText = 
+                        `🌾 कृषिमित्र किसान हेल्पलाइन परामर्श\n` +
+                        `तारीख: ${new Date().toLocaleDateString('hi-IN')}\n` +
+                        `प्रश्न: ${lastQ}\n` +
+                        `सलाह: वैज्ञानिक सिफारिश दर्ज कर ली गई है। विस्तृत खुराक व उपचार हेतु नजदीकी केवीके या किसान कॉल सेंटर 1800-180-1551 पर संपर्क करें।`;
+                }
+            });
+        });
+    }
+
+    function toggleSpeech() {
+        if (isListening) {
+            stopListeningAnimation();
+            if (recognition) recognition.stop();
+        } else {
+            startListening();
+        }
+    }
+
+    function startListening() {
+        if (!recognition) {
+            alert("माइक सपोर्ट केवल Google Chrome / Edge ब्राउज़र में उपलब्ध है। आप दाईं ओर दिए गए किसी भी सवाल पर क्लिक करके भी टेस्ट कर सकते हैं!");
+            return;
+        }
+        isListening = true;
+        document.getElementById('micBtn').classList.add('listening');
+        recognition.start();
+    }
+
+    function stopListeningAnimation() {
+        isListening = false;
+        document.getElementById('micBtn').classList.remove('listening');
+    }
+
+    function askPredefined(question) {
+        if (!isCallActive) {
+            startHelplineCall();
+            setTimeout(() => {
+                addUserDialogue(question);
+                sendQuestionToBackend(question);
+            }, 1000);
+        } else {
+            addUserDialogue(question);
+            sendQuestionToBackend(question);
+        }
+    }
+
+    function sendQuestionToBackend(question) {
+        const formData = new URLSearchParams();
+        formData.append("CallSid", currentCallSid);
+        formData.append("From", callerPhone);
+        formData.append("SpeechResult", question);
+
+        fetch("/api/v1/telephony/gather", {
+            method: "POST",
+            body: formData,
+            headers: { "Content-Type": "application/x-www-form-urlencoded" }
+        })
+        .then(res => res.text())
+        .then(xml => {
+            const parser = new DOMParser();
+            const xmlDoc = parser.parseFromString(xml, "text/xml");
+            const sayTags = xmlDoc.getElementsByTagName("Say");
+            const reply = sayTags.length > 0 ? sayTags[0].textContent : "आपकी फसल की जानकारी प्राप्त हो गई है।";
+
+            addAIDialogue(reply);
+            speakText(reply);
+
+            // Update SMS preview
+            document.getElementById('smsInbox').innerText = 
+                `🌾 कृषिमित्र किसान हेल्पलाइन परामर्श\n` +
+                `प्रश्न: ${question}\n` +
+                `सलाह: ${reply.slice(0, 220)}...\n\n` +
+                `हेल्पलाइन: 1800-180-1551`;
+        });
+    }
+
+    function addAIDialogue(text) {
+        const box = document.getElementById('dialogueBox');
+        const bubble = document.createElement('div');
+        bubble.className = 'dialogue-bubble ai';
+        bubble.innerText = '🤖 ' + text;
+        box.appendChild(bubble);
+        box.scrollTop = box.scrollHeight;
+    }
+
+    function addUserDialogue(text) {
+        const box = document.getElementById('dialogueBox');
+        const bubble = document.createElement('div');
+        bubble.className = 'dialogue-bubble user';
+        bubble.innerText = '👨‍🌾 ' + text;
+        box.appendChild(bubble);
+        box.scrollTop = box.scrollHeight;
+    }
+</script>
+
+</body>
+</html>
