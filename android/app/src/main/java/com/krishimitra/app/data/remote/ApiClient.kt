@@ -43,7 +43,7 @@ class ApiClient(private val context: Context) {
 
         try {
             val apiKey = "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"
-            val systemPrompt = "You are KrishiMitra, an expert AI agricultural assistant for Indian farmers certified by ICAR. Provide accurate, practical farming advice on crops, weather, mandi prices, fertilizers, pest control, and government schemes in Hindi or English as requested. Keep responses helpful, grounded, and concise."
+            val systemPrompt = "You are KrishiMitra, an intelligent AI assistant powered by Grok. You specialize in agricultural advice for farmers (crops, weather, mandi prices, schemes, diseases), but you can also answer ANY general question on any topic (science, math, general knowledge, coding, history, daily life) accurately, clearly, and concisely in Hindi or English as requested."
 
             val messages = com.google.gson.JsonArray().apply {
                 add(JsonObject().apply {
@@ -78,11 +78,24 @@ class ApiClient(private val context: Context) {
                     val choices = respJson.getAsJsonArray("choices")
                     if (choices != null && choices.size() > 0) {
                         val content = choices.get(0).asJsonObject.getAsJsonObject("message").get("content").asString
+                        
+                        var tokenUsageStr: String? = null
+                        if (respJson.has("usage") && !respJson.get("usage").isJsonNull) {
+                            val usage = respJson.getAsJsonObject("usage")
+                            val promptTok = usage.get("prompt_tokens")?.asInt ?: 0
+                            val compTok = usage.get("completion_tokens")?.asInt ?: 0
+                            val totalTok = usage.get("total_tokens")?.asInt ?: (promptTok + compTok)
+                            tokenUsageStr = "Tokens: $totalTok (Prompt: $promptTok | Comp: $compTok)"
+                        }
+
                         val result = JsonObject().apply {
                             addProperty("answer", content)
                             addProperty("source", "KrishiMitra Cloud AI (Grok LLM)")
                             addProperty("is_verified_fact", true)
                             addProperty("detected_intent", "cloud_grok_ai")
+                            if (tokenUsageStr != null) {
+                                addProperty("token_usage", tokenUsageStr)
+                            }
                         }
                         return@withContext result
                     }

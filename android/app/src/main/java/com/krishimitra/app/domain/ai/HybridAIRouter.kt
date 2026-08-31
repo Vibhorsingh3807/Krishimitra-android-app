@@ -57,16 +57,18 @@ class RemoteAIProvider(private val apiClient: ApiClient) : AIProvider {
         val cloudResponse = apiClient.queryCloudAI(query, crop, district)
         if (cloudResponse != null) {
             val ans = cloudResponse.get("answer").asString
-            val source = cloudResponse.get("source")?.asString ?: "Cloud AI (ICAR Grounded)"
+            val source = cloudResponse.get("source")?.asString ?: "Cloud AI (Grok LLM)"
             val verified = cloudResponse.get("is_verified_fact")?.asBoolean ?: false
             val intent = cloudResponse.get("detected_intent")?.asString
+            val tokenUsage = cloudResponse.get("token_usage")?.asString
 
             return@withContext ChatMessage(
                 text = ans,
                 isUser = false,
                 source = source,
                 isVerified = verified,
-                intent = intent
+                intent = intent,
+                tokenUsage = tokenUsage
             )
         }
         throw IllegalStateException("Cloud AI request failed or offline")

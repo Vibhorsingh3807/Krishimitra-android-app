@@ -98,7 +98,8 @@ data class ChatMessage(
     val source: String? = null,
     val isVerified: Boolean = true,
     val intent: String? = null,
-    val isSpeaking: Boolean = false
+    val isSpeaking: Boolean = false,
+    val tokenUsage: String? = null
 )
 
 data class WeatherInfo(
