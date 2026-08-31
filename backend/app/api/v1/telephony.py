@@ -1,6 +1,8 @@
+import datetime
 from fastapi import APIRouter, Request, Form, Response, BackgroundTasks
 from typing import Optional, List
 from backend.app.services.telephony_service import telephony_service
+from backend.app.services.ai_provider import get_ai_provider
 from backend.app.schemas.telephony import (
     OutboundCallRequest,
     OutboundCallResponse,
@@ -96,3 +98,42 @@ async def list_telephony_sessions():
     Returns active and past telephony sessions, queries asked by farmers, and SMS status.
     """
     return telephony_service.list_sessions()
+
+
+@router.api_route("/exotel", methods=["GET", "POST"], summary="Exotel Indian Cloud Telephony Webhook")
+async def exotel_webhook(
+    request: Request,
+    CallSid: Optional[str] = None,
+    CallFrom: Optional[str] = None,
+    From: Optional[str] = None,
+    Digits: Optional[str] = None
+):
+    """
+    Webhook handler for Exotel Indian Telephony (Passthru Applet).
+    Receives incoming calls from Indian phone numbers and returns Hindi advice.
+    """
+    caller = CallFrom or From or "Unknown"
+    sid = CallSid or f"EXO_{int(datetime.datetime.now().timestamp())}"
+    
+    # Check if caller pressed an IVR digit (1 for Wheat, 2 for Rice, 3 for Weather, etc.)
+    query = "सामान्य कृषि सलाह"
+    if Digits == "1":
+        query = "गेहूं में खाद और सिंचाई की सलाह"
+    elif Digits == "2":
+        query = "धान में खाद और कीट नियंत्रण की सलाह"
+    elif Digits == "3":
+        query = "आज का मौसम और कृषि चेतावनी"
+    elif Digits:
+        query = f"फसल सलाह विकल्प {Digits}"
+
+    ai_provider = get_ai_provider()
+    ai_resp = await ai_provider.answer_query(
+        query=query,
+        language="hi",
+        context={"caller_phone": caller, "provider": "exotel"}
+    )
+
+    advisory_text = ai_resp.answer.strip()
+
+    # Return plain text response which Exotel Passthru applet can speak via Text-to-Speech
+    return Response(content=advisory_text, media_type="text/plain; charset=utf-8")
