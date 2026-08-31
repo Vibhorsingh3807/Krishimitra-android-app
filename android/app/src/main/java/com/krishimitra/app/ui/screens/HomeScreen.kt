@@ -86,6 +86,13 @@ fun HomeScreen(
             Icons.Default.Grass,
             Color(0xFF00695C),
             Screen.CropGuide.route
+        ),
+        ActionCardItem(
+            R.string.action_roi,
+            R.string.action_roi_desc,
+            Icons.Default.Calculate,
+            Color(0xFFD84315),
+            Screen.RoiCalculator.route
         )
     )
 

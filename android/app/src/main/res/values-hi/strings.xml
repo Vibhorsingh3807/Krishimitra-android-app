@@ -78,6 +78,9 @@
     <string name="max_limit">अधिकतम ऋण सीमा:</string>
     <string name="documents_required">आवश्यक दस्तावेज:</string>
 
+    <string name="action_roi">निवेश व लाभ कैलकुलेटर</string>
+    <string name="action_roi_desc">खेती की लागत, मुनाफा/घाटा व ब्रेक-इवन मूल्य की गणना</string>
+    <string name="roi_title">फसल निवेश व लाभ कैलकुलेटर</string>
     <!-- Common -->
     <string name="search_placeholder">फसल, योजना, रोग या खाद खोजें…</string>
     <string name="loading">लोड हो रहा है…</string>

@@ -53,6 +53,9 @@ fun KrishiNavGraph(
         composable(Screen.Mandi.route) {
             MandiScreen(dbHelper = dbHelper, onAskAI = { q -> navController.navigate(Screen.Chat.route) })
         }
+        composable(Screen.RoiCalculator.route) {
+            RoiCalculatorScreen(dbHelper = dbHelper)
+        }
         composable(Screen.Sources.route) {
             SourcesScreen()
         }

@@ -80,6 +80,9 @@
     <string name="max_limit">Max Limit:</string>
     <string name="documents_required">Documents Required:</string>
 
+    <string name="action_roi">Investment &amp; ROI Calculator</string>
+    <string name="action_roi_desc">Calculate cultivation costs, profit/loss &amp; break-even</string>
+    <string name="roi_title">Crop Investment &amp; ROI Calculator</string>
     <!-- Common -->
     <string name="search_placeholder">Search crops, schemes, diseases…</string>
     <string name="loading">Loading…</string>
