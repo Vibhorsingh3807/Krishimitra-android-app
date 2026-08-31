@@ -62,127 +62,101 @@ class VoiceManager(private val context: Context) : TextToSpeech.OnInitListener {
     init {
         try {
             tts = TextToSpeech(context, this)
-        } catch (e: Throwable) {
+        } catch (e: Exception) {
             Log.e(TAG, "Failed to instantiate TTS: ${e.message}")
         }
         initSpeechRecognizer()
     }
 
-    fun initSpeechRecognizer() {
+    private fun initSpeechRecognizer() {
         try {
-            speechRecognizer?.destroy()
-            speechRecognizer = null
             if (SpeechRecognizer.isRecognitionAvailable(context)) {
                 speechRecognizer = SpeechRecognizer.createSpeechRecognizer(context).apply {
-                    setRecognitionListener(createRecognitionListener())
+                    setRecognitionListener(object : RecognitionListener {
+                        override fun onReadyForSpeech(params: Bundle?) {
+                            _isListening.value = true
+                            _voiceState.value = VoiceState.RECORDING
+                            _lastError.value = null
+                        }
+
+                        override fun onBeginningOfSpeech() {
+                            _voiceState.value = VoiceState.RECORDING
+                        }
+
+                        override fun onRmsChanged(rmsdB: Float) {}
+                        override fun onBufferReceived(buffer: ByteArray?) {}
+
+                        override fun onEndOfSpeech() {
+                            _isListening.value = false
+                            _voiceState.value = VoiceState.PROCESSING
+                        }
+
+                        override fun onError(error: Int) {
+                            _isListening.value = false
+                            val errorMsg = when (error) {
+                                SpeechRecognizer.ERROR_NETWORK_TIMEOUT -> "Network timeout"
+                                SpeechRecognizer.ERROR_NETWORK -> "Network or offline speech pack error"
+                                SpeechRecognizer.ERROR_NO_MATCH -> "No clear speech detected. Please speak closer to mic."
+                                SpeechRecognizer.ERROR_RECOGNIZER_BUSY -> "Microphone busy"
+                                SpeechRecognizer.ERROR_INSUFFICIENT_PERMISSIONS -> "Microphone permission required"
+                                else -> "Voice recognition error ($error)"
+                            }
+                            Log.w(TAG, "Speech error: $errorMsg ($error)")
+                            _lastError.value = errorMsg
+                            _voiceState.value = VoiceState.ERROR
+                        }
+
+                        override fun onResults(results: Bundle?) {
+                            _isListening.value = false
+                            _voiceState.value = VoiceState.IDLE
+                            val matches = results?.getStringArrayList(SpeechRecognizer.RESULTS_RECOGNITION)
+                            if (!matches.isNullOrEmpty()) {
+                                val recognized = matches[0]
+                                _transcription.value = recognized
+                                onSpeechResultCallback?.invoke(recognized)
+                            }
+                        }
+
+                        override fun onPartialResults(partialResults: Bundle?) {
+                            val matches = partialResults?.getStringArrayList(SpeechRecognizer.RESULTS_RECOGNITION)
+                            if (!matches.isNullOrEmpty()) {
+                                _transcription.value = matches[0]
+                            }
+                        }
+
+                        override fun onEvent(eventType: Int, params: Bundle?) {}
+                    })
                 }
-                Log.i(TAG, "SpeechRecognizer initialized.")
             }
-        } catch (e: Throwable) {
-            Log.e(TAG, "SpeechRecognizer init error: ${e.message}")
+        } catch (e: Exception) {
+            Log.e(TAG, "Error initializing SpeechRecognizer: ${e.message}")
         }
-    }
-
-    private fun createRecognitionListener() = object : RecognitionListener {
-        override fun onReadyForSpeech(params: Bundle?) {
-            _isListening.value = true
-            _voiceState.value = VoiceState.RECORDING
-            _lastError.value = null
-        }
-
-        override fun onBeginningOfSpeech() {
-            _voiceState.value = VoiceState.RECORDING
-        }
-
-        override fun onRmsChanged(rmsdB: Float) {}
-        override fun onBufferReceived(buffer: ByteArray?) {}
-
-        override fun onEndOfSpeech() {
-            _isListening.value = false
-            _voiceState.value = VoiceState.PROCESSING
-        }
-
-        override fun onError(error: Int) {
-            _isListening.value = false
-            try {
-                speechRecognizer?.cancel()
-            } catch (ignored: Throwable) {}
-
-            val errorMsg = when (error) {
-                SpeechRecognizer.ERROR_NETWORK_TIMEOUT -> "इंटरनेट धीमा है / Network timeout"
-                SpeechRecognizer.ERROR_NETWORK -> "इंटरनेट कनेक्शन की जांच करें"
-                SpeechRecognizer.ERROR_AUDIO -> "माइक त्रुटि / Audio error"
-                SpeechRecognizer.ERROR_SERVER -> "सर्वर त्रुटि / Server error"
-                SpeechRecognizer.ERROR_CLIENT -> "Client error"
-                SpeechRecognizer.ERROR_SPEECH_TIMEOUT -> "कोई आवाज नहीं सुनाई दी"
-                SpeechRecognizer.ERROR_NO_MATCH -> "स्पष्ट आवाज नहीं मिली, पुनः बोलें"
-                SpeechRecognizer.ERROR_RECOGNIZER_BUSY -> "माइक व्यस्त था, पुनः प्रयास करें"
-                SpeechRecognizer.ERROR_INSUFFICIENT_PERMISSIONS -> "माइक्रोफोन की अनुमति दें"
-                else -> "आवाज त्रुटि ($error)"
-            }
-            Log.w(TAG, "Speech error: $errorMsg ($error)")
-            _lastError.value = errorMsg
-            _voiceState.value = VoiceState.ERROR
-
-            if (error == SpeechRecognizer.ERROR_RECOGNIZER_BUSY || error == SpeechRecognizer.ERROR_CLIENT) {
-                initSpeechRecognizer()
-            }
-        }
-
-        override fun onResults(results: Bundle?) {
-            _isListening.value = false
-            _voiceState.value = VoiceState.IDLE
-            try {
-                val matches = results?.getStringArrayList(SpeechRecognizer.RESULTS_RECOGNITION)
-                if (!matches.isNullOrEmpty()) {
-                    val recognized = matches[0]
-                    _transcription.value = recognized
-                    onSpeechResultCallback?.invoke(recognized)
-                }
-            } catch (e: Throwable) {
-                Log.e(TAG, "Error processing speech results: ${e.message}")
-            }
-        }
-
-        override fun onPartialResults(partialResults: Bundle?) {
-            try {
-                val matches = partialResults?.getStringArrayList(SpeechRecognizer.RESULTS_RECOGNITION)
-                if (!matches.isNullOrEmpty()) {
-                    _transcription.value = matches[0]
-                }
-            } catch (ignored: Throwable) {}
-        }
-
-        override fun onEvent(eventType: Int, params: Bundle?) {}
     }
 
     override fun onInit(status: Int) {
         if (status == TextToSpeech.SUCCESS) {
             isTtsReady = true
-            try {
-                val hindiLocale = Locale("hi", "IN")
-                val avail = tts?.isLanguageAvailable(hindiLocale)
-                isHindiTtsAvailable = (avail != TextToSpeech.LANG_NOT_SUPPORTED && avail != TextToSpeech.LANG_MISSING_DATA)
 
-                tts?.setOnUtteranceProgressListener(object : UtteranceProgressListener() {
-                    override fun onStart(utteranceId: String?) {
-                        _isSpeaking.value = true
-                        _voiceState.value = VoiceState.SPEAKING
-                    }
+            val hindiLocale = Locale("hi", "IN")
+            val avail = tts?.isLanguageAvailable(hindiLocale)
+            isHindiTtsAvailable = (avail != TextToSpeech.LANG_NOT_SUPPORTED && avail != TextToSpeech.LANG_MISSING_DATA)
 
-                    override fun onDone(utteranceId: String?) {
-                        _isSpeaking.value = false
-                        _voiceState.value = VoiceState.IDLE
-                    }
+            tts?.setOnUtteranceProgressListener(object : UtteranceProgressListener() {
+                override fun onStart(utteranceId: String?) {
+                    _isSpeaking.value = true
+                    _voiceState.value = VoiceState.SPEAKING
+                }
 
-                    override fun onError(utteranceId: String?) {
-                        _isSpeaking.value = false
-                        _voiceState.value = VoiceState.IDLE
-                    }
-                })
-            } catch (e: Throwable) {
-                Log.e(TAG, "TTS onInit setup error: ${e.message}")
-            }
+                override fun onDone(utteranceId: String?) {
+                    _isSpeaking.value = false
+                    _voiceState.value = VoiceState.IDLE
+                }
+
+                override fun onError(utteranceId: String?) {
+                    _isSpeaking.value = false
+                    _voiceState.value = VoiceState.IDLE
+                }
+            })
         }
     }
 
@@ -191,52 +165,47 @@ class VoiceManager(private val context: Context) : TextToSpeech.OnInitListener {
     }
 
     fun startListening(onResult: (String) -> Unit) {
-        try {
-            stopSpeaking()
-            this.onSpeechResultCallback = onResult
-            _transcription.value = null
-            _lastError.value = null
+        stopSpeaking()
+        this.onSpeechResultCallback = onResult
+        _transcription.value = null
+        _lastError.value = null
+        _voiceState.value = VoiceState.RECORDING
 
-            if (speechRecognizer == null) {
-                initSpeechRecognizer()
-            }
+        val intent = Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH).apply {
+            putExtra(RecognizerIntent.EXTRA_LANGUAGE_MODEL, RecognizerIntent.LANGUAGE_MODEL_FREE_FORM)
+            putExtra(RecognizerIntent.EXTRA_PARTIAL_RESULTS, true)
 
-            val intent = Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH).apply {
-                putExtra(RecognizerIntent.EXTRA_LANGUAGE_MODEL, RecognizerIntent.LANGUAGE_MODEL_FREE_FORM)
-                putExtra(RecognizerIntent.EXTRA_PARTIAL_RESULTS, true)
-
-                when (_voiceMode.value) {
-                    VoiceMode.HINDI -> {
-                        putExtra(RecognizerIntent.EXTRA_LANGUAGE, "hi-IN")
-                        putExtra(RecognizerIntent.EXTRA_LANGUAGE_PREFERENCE, "hi-IN")
-                    }
-                    VoiceMode.ENGLISH -> {
-                        putExtra(RecognizerIntent.EXTRA_LANGUAGE, "en-IN")
-                        putExtra(RecognizerIntent.EXTRA_LANGUAGE_PREFERENCE, "en-IN")
-                    }
-                    VoiceMode.AUTO -> {
-                        putExtra(RecognizerIntent.EXTRA_LANGUAGE, "hi-IN")
-                        putExtra(RecognizerIntent.EXTRA_LANGUAGE_PREFERENCE, "hi-IN")
-                    }
+            when (_voiceMode.value) {
+                VoiceMode.HINDI -> {
+                    putExtra(RecognizerIntent.EXTRA_LANGUAGE, "hi-IN")
+                    putExtra(RecognizerIntent.EXTRA_LANGUAGE_PREFERENCE, "hi-IN")
+                }
+                VoiceMode.ENGLISH -> {
+                    putExtra(RecognizerIntent.EXTRA_LANGUAGE, "en-IN")
+                    putExtra(RecognizerIntent.EXTRA_LANGUAGE_PREFERENCE, "en-IN")
+                }
+                VoiceMode.AUTO -> {
+                    putExtra(RecognizerIntent.EXTRA_LANGUAGE, "hi-IN")
+                    putExtra(RecognizerIntent.EXTRA_LANGUAGE_PREFERENCE, "hi-IN")
+                    putExtra(RecognizerIntent.EXTRA_SUPPORTED_LANGUAGES, arrayListOf("hi-IN", "en-IN"))
                 }
             }
+        }
 
-            speechRecognizer?.cancel()
+        try {
             speechRecognizer?.startListening(intent)
             _isListening.value = true
-            _voiceState.value = VoiceState.RECORDING
-        } catch (e: Throwable) {
+        } catch (e: Exception) {
             Log.e(TAG, "Failed to start listening: ${e.message}")
             _isListening.value = false
             _voiceState.value = VoiceState.ERROR
-            _lastError.value = "माइक शुरू करने में समस्या आई"
         }
     }
 
     fun stopListening() {
         try {
             speechRecognizer?.stopListening()
-        } catch (e: Throwable) {
+        } catch (e: Exception) {
             Log.e(TAG, "Error stopping listening: ${e.message}")
         } finally {
             _isListening.value = false
@@ -250,25 +219,25 @@ class VoiceManager(private val context: Context) : TextToSpeech.OnInitListener {
         if (!isTtsReady || tts == null) return
         stopSpeaking()
 
+        val shouldUseHindi = forceHindi ?: when (_voiceMode.value) {
+            VoiceMode.HINDI -> true
+            VoiceMode.ENGLISH -> false
+            VoiceMode.AUTO -> LanguageDetector.isHindiResponsePreferred(text, VoiceMode.AUTO)
+        }
+
+        val targetLocale = if (shouldUseHindi && isHindiTtsAvailable) {
+            Locale("hi", "IN")
+        } else {
+            Locale("en", "IN")
+        }
+
         try {
-            val shouldUseHindi = forceHindi ?: when (_voiceMode.value) {
-                VoiceMode.HINDI -> true
-                VoiceMode.ENGLISH -> false
-                VoiceMode.AUTO -> LanguageDetector.isHindiResponsePreferred(text, VoiceMode.AUTO)
-            }
-
-            val targetLocale = if (shouldUseHindi && isHindiTtsAvailable) {
-                Locale("hi", "IN")
-            } else {
-                Locale("en", "IN")
-            }
-
             tts?.language = targetLocale
             tts?.setSpeechRate(0.92f)
             _voiceState.value = VoiceState.SPEAKING
             tts?.speak(text, TextToSpeech.QUEUE_FLUSH, null, "krishi_tts_${System.currentTimeMillis()}")
-        } catch (e: Throwable) {
-            Log.e(TAG, "Error in TTS speak: ${e.message}")
+        } catch (e: Exception) {
+            Log.e(TAG, "Error speaking text: ${e.message}")
         }
     }
 
@@ -276,7 +245,7 @@ class VoiceManager(private val context: Context) : TextToSpeech.OnInitListener {
         if (isTtsReady) {
             try {
                 tts?.stop()
-            } catch (ignored: Throwable) {}
+            } catch (ignored: Exception) {}
             _isSpeaking.value = false
             if (_voiceState.value == VoiceState.SPEAKING) {
                 _voiceState.value = VoiceState.IDLE
@@ -289,6 +258,8 @@ class VoiceManager(private val context: Context) : TextToSpeech.OnInitListener {
             speechRecognizer?.destroy()
             tts?.stop()
             tts?.shutdown()
-        } catch (ignored: Throwable) {}
+        } catch (e: Exception) {
+            Log.e(TAG, "Error destroying voice manager: ${e.message}")
+        }
     }
 }

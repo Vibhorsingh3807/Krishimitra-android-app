@@ -1,10 +1,6 @@
 package com.krishimitra.app.ui.screens
 
-import android.Manifest
-import android.content.pm.PackageManager
-import android.util.Log
-import androidx.activity.compose.rememberLauncherForActivityResult
-import androidx.activity.result.contract.ActivityResultContracts
+import android.view.MotionEvent
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -20,15 +16,15 @@ import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
+import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.input.pointer.pointerInteropFilter
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.core.content.ContextCompat
 import com.krishimitra.app.R
 import com.krishimitra.app.domain.ai.HybridAIRouter
 import com.krishimitra.app.domain.model.ChatMessage
@@ -38,12 +34,12 @@ import com.krishimitra.app.voice.VoiceMode
 import kotlinx.coroutines.launch
 import java.util.Locale
 
+@OptIn(ExperimentalComposeUiApi::class)
 @Composable
 fun ChatScreen(
     aiRouter: HybridAIRouter,
     voiceManager: VoiceManager
 ) {
-    val context = LocalContext.current
     val coroutineScope = rememberCoroutineScope()
     val listState = rememberLazyListState()
 
@@ -51,13 +47,13 @@ fun ChatScreen(
     val isListening by voiceManager.isListening.collectAsState()
     val isSpeaking by voiceManager.isSpeaking.collectAsState()
     val voiceMode by voiceManager.voiceMode.collectAsState()
+    val voiceState by voiceManager.voiceState.collectAsState()
     val lastVoiceError by voiceManager.lastError.collectAsState()
 
-    // Safe locale reading that NEVER throws IndexOutOfBoundsException
     val appLocale = remember {
         try {
             Locale.getDefault().language ?: "hi"
-        } catch (e: Throwable) {
+        } catch (e: Exception) {
             "hi"
         }
     }
@@ -106,28 +102,15 @@ fun ChatScreen(
                 messages.add(reply)
                 listState.animateScrollToItem(messages.size - 1)
                 voiceManager.speak(reply.text, forceHindi = (forceLang == "hi"))
-            } catch (e: Throwable) {
-                Log.e("ChatScreen", "Error answering query: ${e.message}", e)
+            } catch (e: Exception) {
                 messages.add(
                     ChatMessage(
-                        text = "क्षमा करें, जानकारी लोड करने में समस्या आई। कृपया अपना प्रश्न दोबारा पूछें।",
+                        text = "क्षमा करें, उत्तर लोड करने में समस्या आई। कृपया दोबारा प्रयास करें।",
                         isUser = false,
                         source = "कृषिमित्र सहायक",
                         isVerified = false
                     )
                 )
-            }
-        }
-    }
-
-    val audioPermissionLauncher = rememberLauncherForActivityResult(
-        contract = ActivityResultContracts.RequestPermission()
-    ) { granted ->
-        if (granted) {
-            try {
-                voiceManager.startListening { query -> sendMessage(query) }
-            } catch (e: Throwable) {
-                Log.e("ChatScreen", "Error starting speech listening: ${e.message}")
             }
         }
     }
@@ -148,9 +131,9 @@ fun ChatScreen(
         ) {
             Text(
                 text = when (voiceMode) {
-                    VoiceMode.AUTO -> "आवाज: स्वतः (हिंदी/अंग्रेजी)"
-                    VoiceMode.HINDI -> "आवाज: हिंदी (Hindi)"
-                    VoiceMode.ENGLISH -> "Voice: English"
+                    VoiceMode.AUTO -> stringResource(R.string.voice_mode_auto)
+                    VoiceMode.HINDI -> stringResource(R.string.voice_mode_hi)
+                    VoiceMode.ENGLISH -> stringResource(R.string.voice_mode_en)
                 },
                 style = MaterialTheme.typography.labelMedium.copy(
                     color = GreenPrimary,
@@ -193,13 +176,7 @@ fun ChatScreen(
             items(messages) { msg ->
                 ChatBubble(
                     message = msg,
-                    onSpeakClick = {
-                        try {
-                            voiceManager.speak(msg.text)
-                        } catch (e: Throwable) {
-                            Log.e("ChatScreen", "Speak click error: ${e.message}")
-                        }
-                    }
+                    onSpeakClick = { voiceManager.speak(msg.text) }
                 )
             }
         }
@@ -231,7 +208,7 @@ fun ChatScreen(
             }
         }
 
-        // Listening Status Indicator
+        // Hold-to-Talk Status Indicator
         AnimatedVisibility(visible = isListening) {
             Row(
                 modifier = Modifier
@@ -249,7 +226,7 @@ fun ChatScreen(
                 )
                 Spacer(modifier = Modifier.width(6.dp))
                 Text(
-                    text = "सुन रहे हैं... बोलिए (Listening...)",
+                    text = stringResource(R.string.assistant_listening),
                     color = AlertRed,
                     fontWeight = FontWeight.Bold,
                     fontSize = 13.sp
@@ -257,7 +234,7 @@ fun ChatScreen(
             }
         }
 
-        // Voice Error Banner
+        // Voice Error / Offline Notice Banner
         AnimatedVisibility(visible = lastVoiceError != null && !isListening) {
             lastVoiceError?.let { err ->
                 Row(
@@ -299,7 +276,7 @@ fun ChatScreen(
                 modifier = Modifier.weight(1f),
                 placeholder = {
                     Text(
-                        text = "हिंदी या अंग्रेजी में प्रश्न पूछें...",
+                        text = stringResource(R.string.assistant_hint),
                         fontSize = 13.sp,
                         color = TextSecondary
                     )
@@ -312,6 +289,7 @@ fun ChatScreen(
                 maxLines = 3
             )
 
+            // If text typed, show Send button; otherwise Hold-to-Talk Mic button
             if (inputText.isNotBlank()) {
                 IconButton(
                     onClick = { sendMessage(inputText) },
@@ -327,35 +305,32 @@ fun ChatScreen(
                     )
                 }
             } else {
-                IconButton(
-                    onClick = {
-                        val hasMicPermission = ContextCompat.checkSelfPermission(
-                            context,
-                            Manifest.permission.RECORD_AUDIO
-                        ) == PackageManager.PERMISSION_GRANTED
-
-                        if (!hasMicPermission) {
-                            audioPermissionLauncher.launch(Manifest.permission.RECORD_AUDIO)
-                        } else if (isListening) {
-                            voiceManager.stopListening()
-                        } else {
-                            try {
-                                voiceManager.startListening { query ->
-                                    sendMessage(query)
-                                }
-                            } catch (e: Throwable) {
-                                Log.e("ChatScreen", "Mic start error: ${e.message}")
-                            }
-                        }
-                    },
+                // Original Hold-to-Talk Mic Button
+                Box(
+                    contentAlignment = Alignment.Center,
                     modifier = Modifier
                         .size(50.dp)
                         .clip(CircleShape)
                         .background(if (isListening) AlertRed else GreenPrimary)
+                        .pointerInteropFilter { event ->
+                            when (event.action) {
+                                MotionEvent.ACTION_DOWN -> {
+                                    voiceManager.startListening { query ->
+                                        sendMessage(query)
+                                    }
+                                    true
+                                }
+                                MotionEvent.ACTION_UP, MotionEvent.ACTION_CANCEL -> {
+                                    voiceManager.stopListening()
+                                    true
+                                }
+                                else -> false
+                            }
+                        }
                 ) {
                     Icon(
-                        imageVector = if (isListening) Icons.Default.MicOff else Icons.Default.Mic,
-                        contentDescription = if (isListening) "Stop listening" else "Tap to speak",
+                        imageVector = Icons.Default.Mic,
+                        contentDescription = stringResource(R.string.assistant_hold_to_talk),
                         tint = Color.White,
                         modifier = Modifier.size(26.dp)
                     )
@@ -419,7 +394,7 @@ fun ChatBubble(
                             )
                             Spacer(modifier = Modifier.width(4.dp))
                             Text(
-                                text = message.source ?: "आईसीएआर / सरकारी प्रमाणित",
+                                text = message.source ?: stringResource(R.string.assistant_verified_tag),
                                 style = MaterialTheme.typography.labelSmall.copy(
                                     fontSize = 10.sp,
                                     color = TextSecondary
