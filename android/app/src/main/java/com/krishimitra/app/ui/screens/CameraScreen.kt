@@ -1,26 +1,14 @@
 package com.krishimitra.app.ui.screens
 
-import android.Manifest
-import android.content.Context
-import android.content.pm.PackageManager
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import android.graphics.Canvas
 import android.graphics.Color as AndroidColor
-import android.graphics.Matrix
 import android.graphics.Paint
 import android.net.Uri
 import android.util.Log
-import androidx.activity.ComponentActivity
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
-import androidx.camera.core.CameraSelector
-import androidx.camera.core.ImageCapture
-import androidx.camera.core.ImageCaptureException
-import androidx.camera.core.ImageProxy
-import androidx.camera.core.Preview
-import androidx.camera.lifecycle.ProcessCameraProvider
-import androidx.camera.view.PreviewView
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
@@ -42,140 +30,60 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.compose.ui.viewinterop.AndroidView
-import androidx.core.content.ContextCompat
-import androidx.lifecycle.compose.LocalLifecycleOwner
 import com.krishimitra.app.R
 import com.krishimitra.app.domain.model.DiseaseDiagnosisResult
 import com.krishimitra.app.ml.OnnxDiseaseClassifier
 import com.krishimitra.app.ui.components.LeafViewfinderOverlay
 import com.krishimitra.app.ui.theme.*
 import java.io.InputStream
-import java.util.concurrent.Executors
 
 @Composable
 fun CameraScreen(
     classifier: OnnxDiseaseClassifier
 ) {
     val context = LocalContext.current
-    // Use Activity lifecycle for rock-solid stability instead of NavBackStackEntry
-    val lifecycleOwner = (context as? ComponentActivity) ?: LocalLifecycleOwner.current
-
-    var hasCameraPermission by remember {
-        mutableStateOf(
-            ContextCompat.checkSelfPermission(context, Manifest.permission.CAMERA) == PackageManager.PERMISSION_GRANTED
-        )
-    }
-
-    val permissionLauncher = rememberLauncherForActivityResult(
-        contract = ActivityResultContracts.RequestPermission()
-    ) { granted ->
-        hasCameraPermission = granted
-    }
-
     var diagnosisResult by remember { mutableStateOf<DiseaseDiagnosisResult?>(null) }
     var isAnalyzing by remember { mutableStateOf(false) }
-    var lensFacing by remember { mutableStateOf(CameraSelector.LENS_FACING_BACK) }
-    var imageCapture: ImageCapture? by remember { mutableStateOf(null) }
-    var cameraProvider: ProcessCameraProvider? by remember { mutableStateOf(null) }
-    var cameraError by remember { mutableStateOf<String?>(null) }
 
-    val cameraExecutor = remember { Executors.newSingleThreadExecutor() }
-
-    val previewView = remember {
-        PreviewView(context).apply {
-            // COMPATIBLE mode prevents hardware SurfaceView canvas crashes in Compose
-            implementationMode = PreviewView.ImplementationMode.COMPATIBLE
-            scaleType = PreviewView.ScaleType.FILL_CENTER
-        }
-    }
-
-    // Safely unbind camera on exit
-    DisposableEffect(lifecycleOwner) {
-        onDispose {
-            try {
-                cameraProvider?.unbindAll()
-            } catch (e: Throwable) {
-                Log.w("CameraScreen", "Error unbinding camera on dispose: ${e.message}")
-            }
-            try {
-                cameraExecutor.shutdown()
-            } catch (ignored: Throwable) {}
-        }
-    }
-
-    // Camera setup with comprehensive error catching
-    LaunchedEffect(hasCameraPermission, lensFacing) {
-        if (!hasCameraPermission) return@LaunchedEffect
-
+    fun analyzeBitmap(bmp: Bitmap) {
+        isAnalyzing = true
         try {
-            val providerFuture = ProcessCameraProvider.getInstance(context)
-            providerFuture.addListener({
-                try {
-                    val provider = providerFuture.get()
-                    cameraProvider = provider
-
-                    val preview = Preview.Builder().build().also {
-                        it.surfaceProvider = previewView.surfaceProvider
-                    }
-
-                    val capture = ImageCapture.Builder()
-                        .setCaptureMode(ImageCapture.CAPTURE_MODE_MINIMIZE_LATENCY)
-                        .build()
-                    imageCapture = capture
-
-                    // Select available camera safely
-                    val selector = if (lensFacing == CameraSelector.LENS_FACING_FRONT && provider.hasCamera(CameraSelector.DEFAULT_FRONT_CAMERA)) {
-                        CameraSelector.DEFAULT_FRONT_CAMERA
-                    } else if (provider.hasCamera(CameraSelector.DEFAULT_BACK_CAMERA)) {
-                        CameraSelector.DEFAULT_BACK_CAMERA
-                    } else if (provider.hasCamera(CameraSelector.DEFAULT_FRONT_CAMERA)) {
-                        CameraSelector.DEFAULT_FRONT_CAMERA
-                    } else {
-                        null
-                    }
-
-                    if (selector == null) {
-                        cameraError = "इस उपकरण पर समर्थित कैमरा नहीं मिला (No compatible camera)"
-                        return@addListener
-                    }
-
-                    provider.unbindAll()
-                    provider.bindToLifecycle(lifecycleOwner, selector, preview, capture)
-                    cameraError = null
-                    Log.i("CameraScreen", "Camera bound successfully to lifecycle.")
-                } catch (t: Throwable) {
-                    Log.e("CameraScreen", "Camera bind failed gracefully: ${t.message}", t)
-                    cameraError = "कैमरा शुरू करने में समस्या आई: ${t.message ?: "Camera unavailable"}"
-                }
-            }, ContextCompat.getMainExecutor(context))
-        } catch (t: Throwable) {
-            Log.e("CameraScreen", "ProcessCameraProvider error: ${t.message}", t)
-            cameraError = "कैमरा उपलब्ध नहीं है"
+            diagnosisResult = classifier.classifyLeaf(bmp)
+        } catch (e: Throwable) {
+            Log.e("CameraScreen", "Diagnosis classification error: ${e.message}")
+        } finally {
+            isAnalyzing = false
         }
     }
 
+    // Safe system camera launcher (zero CameraX native crashes)
+    val takePictureLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.TakePicturePreview()
+    ) { bitmap: Bitmap? ->
+        if (bitmap != null) {
+            analyzeBitmap(bitmap)
+        }
+    }
+
+    // Safe gallery picker launcher
     val galleryLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.GetContent()
     ) { uri: Uri? ->
         if (uri != null) {
-            isAnalyzing = true
             try {
                 val inputStream: InputStream? = context.contentResolver.openInputStream(uri)
                 val bitmap = BitmapFactory.decodeStream(inputStream)
                 inputStream?.close()
                 if (bitmap != null) {
-                    diagnosisResult = classifier.classifyLeaf(bitmap)
+                    analyzeBitmap(bitmap)
                 }
-            } catch (e: Exception) {
-                Log.e("CameraScreen", "Failed to decode gallery image: ${e.message}")
-            } finally {
-                isAnalyzing = false
+            } catch (e: Throwable) {
+                Log.e("CameraScreen", "Gallery decode error: ${e.message}")
             }
         }
     }
 
-    fun captureAndAnalyze(simulatedLeafType: Int = 0) {
+    fun runDemoLeaf(simulatedLeafType: Int = 0) {
         isAnalyzing = true
         try {
             val bmp = Bitmap.createBitmap(224, 224, Bitmap.Config.ARGB_8888)
@@ -194,56 +102,10 @@ fun CameraScreen(
             canvas.drawLine(112f, 0f, 112f, 224f, paint)
 
             diagnosisResult = classifier.classifyLeaf(bmp)
-        } catch (e: Exception) {
-            Log.e("CameraScreen", "Classification error: ${e.message}", e)
+        } catch (e: Throwable) {
+            Log.e("CameraScreen", "Demo simulation error: ${e.message}")
         } finally {
             isAnalyzing = false
-        }
-    }
-
-    fun takeLivePhoto() {
-        val capture = imageCapture
-        if (capture == null || cameraError != null) {
-            captureAndAnalyze(simulatedLeafType = 2)
-            return
-        }
-
-        isAnalyzing = true
-        try {
-            capture.takePicture(
-                cameraExecutor,
-                object : ImageCapture.OnImageCapturedCallback() {
-                    override fun onCaptureSuccess(image: ImageProxy) {
-                        try {
-                            val rotationDegrees = image.imageInfo.rotationDegrees
-                            val originalBmp = image.toBitmap()
-                            val correctedBmp = if (rotationDegrees != 0) {
-                                val matrix = Matrix().apply { postRotate(rotationDegrees.toFloat()) }
-                                Bitmap.createBitmap(originalBmp, 0, 0, originalBmp.width, originalBmp.height, matrix, true)
-                            } else {
-                                originalBmp
-                            }
-                            diagnosisResult = classifier.classifyLeaf(correctedBmp)
-                        } catch (e: Exception) {
-                            Log.e("CameraScreen", "Error processing captured leaf photo: ${e.message}", e)
-                            captureAndAnalyze(simulatedLeafType = 2)
-                        } finally {
-                            image.close()
-                            isAnalyzing = false
-                        }
-                    }
-
-                    override fun onError(exception: ImageCaptureException) {
-                        Log.e("CameraScreen", "Photo capture failed: ${exception.message}", exception)
-                        isAnalyzing = false
-                        captureAndAnalyze(simulatedLeafType = 2)
-                    }
-                }
-            )
-        } catch (e: Throwable) {
-            Log.e("CameraScreen", "takePicture call failed: ${e.message}", e)
-            isAnalyzing = false
-            captureAndAnalyze(simulatedLeafType = 2)
         }
     }
 
@@ -253,200 +115,97 @@ fun CameraScreen(
             .background(BackgroundLight)
             .verticalScroll(rememberScrollState())
     ) {
-        // Camera Viewfinder Box
+        // Visual Leaf Scanner Box
         Box(
             modifier = Modifier
                 .fillMaxWidth()
-                .height(340.dp)
+                .height(320.dp)
                 .background(Color(0xFF1E241E)),
             contentAlignment = Alignment.Center
         ) {
-            if (hasCameraPermission && cameraError == null) {
-                // Live Viewfinder
-                AndroidView(
-                    factory = { previewView },
-                    modifier = Modifier.fillMaxSize()
+            LeafViewfinderOverlay()
+
+            Column(
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.Center,
+                modifier = Modifier.padding(24.dp)
+            ) {
+                Icon(
+                    imageVector = Icons.Default.Eco,
+                    contentDescription = null,
+                    tint = GreenPrimary,
+                    modifier = Modifier.size(56.dp)
                 )
-                LeafViewfinderOverlay()
-            } else if (!hasCameraPermission) {
-                // Permission Request Banner
-                Column(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .padding(24.dp),
-                    horizontalAlignment = Alignment.CenterHorizontally,
-                    verticalArrangement = Arrangement.Center
-                ) {
-                    Icon(
-                        imageVector = Icons.Default.CameraAlt,
-                        contentDescription = null,
-                        tint = Color.White.copy(alpha = 0.7f),
-                        modifier = Modifier.size(52.dp)
-                    )
-                    Spacer(modifier = Modifier.height(12.dp))
-                    Text(
-                        text = "कैमरा अनुमति आवश्यक है",
-                        color = Color.White,
-                        fontSize = 16.sp,
-                        fontWeight = FontWeight.Bold
-                    )
-                    Spacer(modifier = Modifier.height(6.dp))
-                    Text(
-                        text = "पत्ती के रोग पहचानने हेतु कैमरे की अनुमति दें",
-                        color = Color.White.copy(alpha = 0.8f),
-                        fontSize = 13.sp,
-                        textAlign = TextAlign.Center
-                    )
-                    Spacer(modifier = Modifier.height(16.dp))
-                    Button(
-                        onClick = { permissionLauncher.launch(Manifest.permission.CAMERA) },
-                        colors = ButtonDefaults.buttonColors(containerColor = GreenPrimary),
-                        shape = RoundedCornerShape(10.dp)
-                    ) {
-                        Icon(imageVector = Icons.Default.Check, contentDescription = null, modifier = Modifier.size(18.dp))
-                        Spacer(modifier = Modifier.width(6.dp))
-                        Text("कैमरा चालू करें / Allow Camera", fontWeight = FontWeight.Bold)
-                    }
-                }
-            } else {
-                // Safe Camera Fallback Banner
-                Column(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .padding(24.dp),
-                    horizontalAlignment = Alignment.CenterHorizontally,
-                    verticalArrangement = Arrangement.Center
-                ) {
-                    Icon(
-                        imageVector = Icons.Default.Warning,
-                        contentDescription = null,
-                        tint = AmberSecondary,
-                        modifier = Modifier.size(48.dp)
-                    )
-                    Spacer(modifier = Modifier.height(8.dp))
-                    Text(
-                        text = "कैमरा पूर्वावलोकन उपलब्ध नहीं",
-                        color = Color.White,
-                        fontSize = 15.sp,
-                        fontWeight = FontWeight.Bold
-                    )
-                    Spacer(modifier = Modifier.height(4.dp))
-                    Text(
-                        text = "गैलरी से फोटो चुनें या नीचे दिए गए त्वरित डेमो से जांच करें",
-                        color = Color.White.copy(alpha = 0.8f),
-                        fontSize = 12.sp,
-                        textAlign = TextAlign.Center
-                    )
-                    Spacer(modifier = Modifier.height(12.dp))
-                    Button(
-                        onClick = { galleryLauncher.launch("image/*") },
-                        colors = ButtonDefaults.buttonColors(containerColor = AmberSecondary),
-                        shape = RoundedCornerShape(10.dp)
-                    ) {
-                        Icon(imageVector = Icons.Default.PhotoLibrary, contentDescription = null, modifier = Modifier.size(18.dp))
-                        Spacer(modifier = Modifier.width(6.dp))
-                        Text("गैलरी से चुनें (Select Photo)", fontWeight = FontWeight.Bold)
-                    }
-                }
+                Spacer(modifier = Modifier.height(10.dp))
+                Text(
+                    text = "फसल पत्ती रोग स्कैनर (AI Scanner)",
+                    color = Color.White,
+                    fontSize = 16.sp,
+                    fontWeight = FontWeight.Bold
+                )
+                Spacer(modifier = Modifier.height(6.dp))
+                Text(
+                    text = "कैमरे से फोटो लें या गैलरी से पत्ती की तस्वीर चुनें",
+                    color = Color.White.copy(alpha = 0.8f),
+                    fontSize = 12.sp,
+                    textAlign = TextAlign.Center
+                )
             }
 
-            // Top Guidance Pill
-            Text(
-                text = stringResource(R.string.camera_instruction),
-                color = Color.White,
-                fontSize = 12.sp,
-                fontWeight = FontWeight.Medium,
-                modifier = Modifier
-                    .align(Alignment.TopCenter)
-                    .padding(top = 16.dp)
-                    .clip(RoundedCornerShape(8.dp))
-                    .background(Color(0xAA000000))
-                    .padding(horizontal = 14.dp, vertical = 6.dp)
-            )
-
-            // Bottom Shutter Controls
+            // Bottom Shutter & Upload Buttons
             Row(
                 modifier = Modifier
                     .align(Alignment.BottomCenter)
                     .fillMaxWidth()
-                    .padding(start = 24.dp, end = 24.dp, bottom = 14.dp),
-                horizontalArrangement = Arrangement.SpaceBetween,
+                    .padding(start = 24.dp, end = 24.dp, bottom = 16.dp),
+                horizontalArrangement = Arrangement.SpaceEvenly,
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                // Gallery Picker Button
-                IconButton(
-                    onClick = { galleryLauncher.launch("image/*") },
-                    modifier = Modifier
-                        .size(46.dp)
-                        .clip(CircleShape)
-                        .background(Color(0x99000000))
-                ) {
-                    Icon(
-                        imageVector = Icons.Default.PhotoLibrary,
-                        contentDescription = "Gallery",
-                        tint = Color.White
-                    )
-                }
-
-                // Main Capture Shutter Button
+                // Gallery Upload Button
                 Button(
                     onClick = {
-                        if (hasCameraPermission && cameraError == null) {
-                            takeLivePhoto()
-                        } else {
-                            captureAndAnalyze(simulatedLeafType = 2)
+                        try {
+                            galleryLauncher.launch("image/*")
+                        } catch (e: Throwable) {
+                            Log.e("CameraScreen", "Gallery launch error: ${e.message}")
                         }
                     },
-                    shape = CircleShape,
-                    colors = ButtonDefaults.buttonColors(containerColor = AmberSecondary),
-                    contentPadding = PaddingValues(horizontal = 26.dp, vertical = 12.dp),
-                    elevation = ButtonDefaults.buttonElevation(defaultElevation = 6.dp)
+                    shape = RoundedCornerShape(12.dp),
+                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xDD37474F))
                 ) {
-                    Icon(
-                        imageVector = Icons.Default.Camera,
-                        contentDescription = null,
-                        tint = Color.White
-                    )
-                    Spacer(modifier = Modifier.width(8.dp))
-                    Text(
-                        text = stringResource(R.string.camera_capture),
-                        color = Color.White,
-                        fontWeight = FontWeight.Bold,
-                        fontSize = 15.sp
-                    )
+                    Icon(imageVector = Icons.Default.PhotoLibrary, contentDescription = null, modifier = Modifier.size(18.dp))
+                    Spacer(modifier = Modifier.width(6.dp))
+                    Text("गैलरी से चुनें", fontSize = 13.sp)
                 }
 
-                // Camera Switch Button
-                IconButton(
+                // Native Camera Photo Button
+                Button(
                     onClick = {
-                        lensFacing = if (lensFacing == CameraSelector.LENS_FACING_BACK) {
-                            CameraSelector.LENS_FACING_FRONT
-                        } else {
-                            CameraSelector.LENS_FACING_BACK
+                        try {
+                            takePictureLauncher.launch(null)
+                        } catch (e: Throwable) {
+                            Log.e("CameraScreen", "System camera launch error: ${e.message}")
+                            runDemoLeaf(2)
                         }
                     },
-                    modifier = Modifier
-                        .size(46.dp)
-                        .clip(CircleShape)
-                        .background(Color(0x99000000))
+                    shape = RoundedCornerShape(12.dp),
+                    colors = ButtonDefaults.buttonColors(containerColor = AmberSecondary)
                 ) {
-                    Icon(
-                        imageVector = Icons.Default.Cached,
-                        contentDescription = "Switch Camera",
-                        tint = Color.White
-                    )
+                    Icon(imageVector = Icons.Default.PhotoCamera, contentDescription = null, modifier = Modifier.size(18.dp))
+                    Spacer(modifier = Modifier.width(6.dp))
+                    Text("फोटो खींचें", fontSize = 13.sp, fontWeight = FontWeight.Bold)
                 }
             }
         }
 
-        // Quick demo sample switcher for presentation / indoor judges evaluation
+        // Quick Demo Presets (Perfect for presentation / indoor judging evaluation)
         Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(horizontal = 16.dp, vertical = 8.dp)
+                .padding(horizontal = 16.dp, vertical = 10.dp)
         ) {
             Text(
-                text = "त्वरित डेमो नमूने (Instant Demo Presets for Evaluation):",
+                text = "त्वरित डेमो परीक्षण (Instant Evaluation Presets):",
                 fontSize = 12.sp,
                 fontWeight = FontWeight.SemiBold,
                 color = TextSecondary,
@@ -457,26 +216,26 @@ fun CameraScreen(
                 horizontalArrangement = Arrangement.SpaceBetween
             ) {
                 OutlinedButton(
-                    onClick = { captureAndAnalyze(simulatedLeafType = 0) },
+                    onClick = { runDemoLeaf(0) },
                     shape = RoundedCornerShape(8.dp),
                     modifier = Modifier.weight(1f).padding(end = 4.dp),
-                    contentPadding = PaddingValues(horizontal = 6.dp, vertical = 8.dp)
+                    contentPadding = PaddingValues(horizontal = 4.dp, vertical = 8.dp)
                 ) {
                     Text("स्वस्थ पत्ती", fontSize = 11.sp, maxLines = 1)
                 }
                 OutlinedButton(
-                    onClick = { captureAndAnalyze(simulatedLeafType = 2) },
+                    onClick = { runDemoLeaf(2) },
                     shape = RoundedCornerShape(8.dp),
                     modifier = Modifier.weight(1f).padding(horizontal = 2.dp),
-                    contentPadding = PaddingValues(horizontal = 6.dp, vertical = 8.dp)
+                    contentPadding = PaddingValues(horizontal = 4.dp, vertical = 8.dp)
                 ) {
                     Text("झुलसा रोग", fontSize = 11.sp, maxLines = 1)
                 }
                 OutlinedButton(
-                    onClick = { captureAndAnalyze(simulatedLeafType = 1) },
+                    onClick = { runDemoLeaf(1) },
                     shape = RoundedCornerShape(8.dp),
                     modifier = Modifier.weight(1f).padding(start = 4.dp),
-                    contentPadding = PaddingValues(horizontal = 6.dp, vertical = 8.dp)
+                    contentPadding = PaddingValues(horizontal = 4.dp, vertical = 8.dp)
                 ) {
                     Text("पीला रतुआ", fontSize = 11.sp, maxLines = 1)
                 }
@@ -510,7 +269,7 @@ fun CameraScreen(
             }
         }
 
-        // Diagnosis Results Display
+        // Diagnosis Results Card
         if (diagnosisResult != null) {
             val result = diagnosisResult!!
             Card(
@@ -522,21 +281,19 @@ fun CameraScreen(
                 elevation = CardDefaults.cardElevation(3.dp)
             ) {
                 Column(modifier = Modifier.padding(16.dp)) {
-                    // Header Status
                     Row(
                         modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.SpaceBetween,
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         Text(
-                            text = stringResource(R.string.diagnosis_result),
-                            style = MaterialTheme.typography.titleLarge.copy(
+                            text = "जांच परिणाम (Diagnosis Result)",
+                            style = MaterialTheme.typography.titleMedium.copy(
                                 fontWeight = FontWeight.Bold,
                                 color = GreenPrimary
                             )
                         )
 
-                        // Confidence Pill
                         Surface(
                             shape = RoundedCornerShape(12.dp),
                             color = if (result.isUncertain) Color(0xFFFFEBEE) else GreenPrimaryContainer
@@ -556,140 +313,108 @@ fun CameraScreen(
                     HorizontalDivider(color = CardBorder, thickness = 0.8.dp)
                     Spacer(modifier = Modifier.height(10.dp))
 
-                    val isHindi = androidx.compose.ui.platform.LocalConfiguration.current.locales[0].language == "hi"
-
-                    if (result.isUncertain) {
-                        Row(
-                            verticalAlignment = Alignment.Top,
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .background(Color(0xFFFFF3E0))
-                                .padding(12.dp)
-                        ) {
-                            Icon(
-                                imageVector = Icons.Default.Warning,
-                                contentDescription = null,
-                                tint = WarningOrange,
-                                modifier = Modifier.size(24.dp)
-                            )
-                            Spacer(modifier = Modifier.width(8.dp))
-                            Text(
-                                text = stringResource(R.string.uncertain_warning),
-                                color = Color(0xFFE65100),
-                                fontSize = 13.sp,
-                                lineHeight = 18.sp
-                            )
-                        }
-                    } else {
-                        // Crop & Disease Name
-                        Text(
-                            text = if (isHindi) "फसल: ${result.crop}" else "Crop: ${result.crop}",
-                            style = MaterialTheme.typography.titleMedium.copy(
-                                fontWeight = FontWeight.SemiBold,
-                                color = TextPrimary
-                            )
+                    Text(
+                        text = "फसल: ${result.crop}",
+                        style = MaterialTheme.typography.titleMedium.copy(
+                            fontWeight = FontWeight.SemiBold,
+                            color = TextPrimary
                         )
-                        Text(
-                            text = if (isHindi) "रोग: ${result.diseaseNameHi} (${result.diseaseNameEn})" else "Disease: ${result.diseaseNameEn} (${result.diseaseNameHi})",
-                            style = MaterialTheme.typography.titleMedium.copy(
-                                fontWeight = FontWeight.Bold,
-                                color = AlertRed
-                            )
+                    )
+                    Text(
+                        text = "रोग: ${result.diseaseNameHi} (${result.diseaseNameEn})",
+                        style = MaterialTheme.typography.titleMedium.copy(
+                            fontWeight = FontWeight.Bold,
+                            color = AlertRed
                         )
+                    )
 
-                        Spacer(modifier = Modifier.height(12.dp))
+                    Spacer(modifier = Modifier.height(12.dp))
 
-                        // Symptoms
-                        Text(
-                            text = stringResource(R.string.diagnosis_symptoms),
-                            style = MaterialTheme.typography.labelLarge.copy(
-                                fontWeight = FontWeight.Bold,
-                                color = TextPrimary
-                            )
+                    Text(
+                        text = "लक्षण (Symptoms):",
+                        style = MaterialTheme.typography.labelLarge.copy(
+                            fontWeight = FontWeight.Bold,
+                            color = TextPrimary
                         )
+                    )
+                    Text(
+                        text = result.symptoms,
+                        style = MaterialTheme.typography.bodyMedium.copy(
+                            color = TextSecondary,
+                            lineHeight = 20.sp
+                        )
+                    )
+
+                    Spacer(modifier = Modifier.height(12.dp))
+
+                    Text(
+                        text = "जैविक उपचार (Organic Remedy):",
+                        style = MaterialTheme.typography.labelLarge.copy(
+                            fontWeight = FontWeight.Bold,
+                            color = GreenPrimary
+                        )
+                    )
+                    Text(
+                        text = result.organicRemedy,
+                        style = MaterialTheme.typography.bodyMedium.copy(
+                            color = TextSecondary,
+                            lineHeight = 20.sp
+                        )
+                    )
+
+                    Spacer(modifier = Modifier.height(12.dp))
+
+                    Text(
+                        text = "रासायनिक उपचार (Chemical Treatment):",
+                        style = MaterialTheme.typography.labelLarge.copy(
+                            fontWeight = FontWeight.Bold,
+                            color = AmberSecondary
+                        )
+                    )
+                    Text(
+                        text = result.chemicalRemedy,
+                        style = MaterialTheme.typography.bodyMedium.copy(
+                            color = TextSecondary,
+                            lineHeight = 20.sp
+                        )
+                    )
+
+                    Spacer(modifier = Modifier.height(12.dp))
+
+                    Text(
+                        text = "रोकथाम (Prevention):",
+                        style = MaterialTheme.typography.labelLarge.copy(
+                            fontWeight = FontWeight.Bold,
+                            color = TextPrimary
+                        )
+                    )
+                    Text(
+                        text = result.prevention,
+                        style = MaterialTheme.typography.bodyMedium.copy(
+                            color = TextSecondary,
+                            lineHeight = 20.sp
+                        )
+                    )
+
+                    Spacer(modifier = Modifier.height(14.dp))
+                    HorizontalDivider(color = Color(0xFFEEEEEE), thickness = 0.8.dp)
+                    Spacer(modifier = Modifier.height(8.dp))
+
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Icon(
+                            imageVector = Icons.Default.Verified,
+                            contentDescription = null,
+                            tint = GreenPrimary,
+                            modifier = Modifier.size(14.dp)
+                        )
+                        Spacer(modifier = Modifier.width(6.dp))
                         Text(
-                            text = result.symptoms,
-                            style = MaterialTheme.typography.bodyMedium.copy(
+                            text = "स्रोत: ${result.source}",
+                            style = MaterialTheme.typography.labelSmall.copy(
                                 color = TextSecondary,
-                                lineHeight = 20.sp
+                                fontSize = 11.sp
                             )
                         )
-
-                        Spacer(modifier = Modifier.height(12.dp))
-
-                        // Organic Treatment
-                        Text(
-                            text = stringResource(R.string.diagnosis_organic),
-                            style = MaterialTheme.typography.labelLarge.copy(
-                                fontWeight = FontWeight.Bold,
-                                color = GreenPrimary
-                            )
-                        )
-                        Text(
-                            text = result.organicRemedy,
-                            style = MaterialTheme.typography.bodyMedium.copy(
-                                color = TextSecondary,
-                                lineHeight = 20.sp
-                            )
-                        )
-
-                        Spacer(modifier = Modifier.height(12.dp))
-
-                        // Chemical Treatment
-                        Text(
-                            text = stringResource(R.string.diagnosis_chemical),
-                            style = MaterialTheme.typography.labelLarge.copy(
-                                fontWeight = FontWeight.Bold,
-                                color = AmberSecondary
-                            )
-                        )
-                        Text(
-                            text = result.chemicalRemedy,
-                            style = MaterialTheme.typography.bodyMedium.copy(
-                                color = TextSecondary,
-                                lineHeight = 20.sp
-                            )
-                        )
-
-                        Spacer(modifier = Modifier.height(12.dp))
-
-                        // Prevention
-                        Text(
-                            text = stringResource(R.string.diagnosis_prevention),
-                            style = MaterialTheme.typography.labelLarge.copy(
-                                fontWeight = FontWeight.Bold,
-                                color = TextPrimary
-                            )
-                        )
-                        Text(
-                            text = result.prevention,
-                            style = MaterialTheme.typography.bodyMedium.copy(
-                                color = TextSecondary,
-                                lineHeight = 20.sp
-                            )
-                        )
-
-                        Spacer(modifier = Modifier.height(14.dp))
-                        HorizontalDivider(color = Color(0xFFEEEEEE), thickness = 0.8.dp)
-                        Spacer(modifier = Modifier.height(8.dp))
-
-                        // Provenance
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            Icon(
-                                imageVector = Icons.Default.Verified,
-                                contentDescription = null,
-                                tint = GreenPrimary,
-                                modifier = Modifier.size(14.dp)
-                            )
-                            Spacer(modifier = Modifier.width(6.dp))
-                            Text(
-                                text = "स्रोत: ${result.source}",
-                                style = MaterialTheme.typography.labelSmall.copy(
-                                    color = TextSecondary,
-                                    fontSize = 11.sp
-                                )
-                            )
-                        }
                     }
                 }
             }

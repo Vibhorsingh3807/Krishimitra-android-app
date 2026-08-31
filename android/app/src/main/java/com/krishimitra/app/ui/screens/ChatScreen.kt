@@ -1,6 +1,10 @@
 package com.krishimitra.app.ui.screens
 
-import android.view.MotionEvent
+import android.Manifest
+import android.content.pm.PackageManager
+import android.util.Log
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -16,24 +20,15 @@ import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
-import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.input.pointer.pointerInteropFilter
-import androidx.compose.ui.res.stringResource
-import android.Manifest
-import android.app.Activity
-import android.content.pm.PackageManager
-import android.speech.RecognizerIntent
-import android.util.Log
-import androidx.activity.compose.rememberLauncherForActivityResult
-import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.ui.platform.LocalContext
-import androidx.core.content.ContextCompat
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.core.content.ContextCompat
 import com.krishimitra.app.R
 import com.krishimitra.app.domain.ai.HybridAIRouter
 import com.krishimitra.app.domain.model.ChatMessage
@@ -41,8 +36,8 @@ import com.krishimitra.app.ui.theme.*
 import com.krishimitra.app.voice.VoiceManager
 import com.krishimitra.app.voice.VoiceMode
 import kotlinx.coroutines.launch
+import java.util.Locale
 
-@OptIn(ExperimentalComposeUiApi::class)
 @Composable
 fun ChatScreen(
     aiRouter: HybridAIRouter,
@@ -52,26 +47,27 @@ fun ChatScreen(
     val coroutineScope = rememberCoroutineScope()
     val listState = rememberLazyListState()
 
-    var hasAudioPermission by remember {
-        mutableStateOf(
-            ContextCompat.checkSelfPermission(context, Manifest.permission.RECORD_AUDIO) == PackageManager.PERMISSION_GRANTED
-        )
-    }
-
     var inputText by remember { mutableStateOf("") }
     val isListening by voiceManager.isListening.collectAsState()
     val isSpeaking by voiceManager.isSpeaking.collectAsState()
     val voiceMode by voiceManager.voiceMode.collectAsState()
-    val voiceState by voiceManager.voiceState.collectAsState()
     val lastVoiceError by voiceManager.lastError.collectAsState()
-    val appLocale = androidx.compose.ui.platform.LocalConfiguration.current.locales[0].language
+
+    // Safe locale reading that NEVER throws IndexOutOfBoundsException
+    val appLocale = remember {
+        try {
+            Locale.getDefault().language ?: "hi"
+        } catch (e: Throwable) {
+            "hi"
+        }
+    }
 
     val messages = remember {
         mutableStateListOf(
             ChatMessage(
-                text = "नमस्ते! मैं आपका कृषिमित्र कृषि सहायक हूँ। आप हिंदी या अंग्रेजी में अपनी फसल, मिट्टी, खाद, सिंचाई अथवा सरकारी योजनाओं के बारे में कोई भी प्रश्न पूछ सकते हैं।",
+                text = "नमस्ते! मैं आपका कृषिमित्र कृषि सहायक हूँ। आप अपनी फसल, मंडी भाव, उन्नत किस्में, खाद-बीज, रोग उपचार व सरकारी योजनाओं के बारे में कोई भी प्रश्न पूछ सकते हैं।",
                 isUser = false,
-                source = "भाकृअनुप (ICAR) प्रमाणित ज्ञानकोश",
+                source = "भाकृअनुप (ICAR) एवं एगमार्कनेट प्रमाणित ज्ञानकोश",
                 isVerified = true
             )
         )
@@ -87,7 +83,6 @@ fun ChatScreen(
         "किसान क्रेडिट कार्ड (KCC) की ब्याज दर क्या है?"
     )
 
-
     fun sendMessage(query: String) {
         if (query.isBlank()) return
         val userMsg = ChatMessage(text = query, isUser = true)
@@ -95,31 +90,32 @@ fun ChatScreen(
         inputText = ""
 
         coroutineScope.launch {
-            listState.animateScrollToItem(messages.size - 1)
-            val isAppHindi = appLocale == "hi"
-            val forceLang = when (voiceMode) {
-                VoiceMode.HINDI -> "hi"
-                VoiceMode.ENGLISH -> "en"
-                VoiceMode.AUTO -> {
-                    if (com.krishimitra.app.voice.LanguageDetector.isHindiResponsePreferred(query, VoiceMode.AUTO)) "hi"
-                    else if (isAppHindi) "hi"
-                    else "en"
+            try {
+                listState.animateScrollToItem(messages.size - 1)
+                val isAppHindi = appLocale == "hi"
+                val forceLang = when (voiceMode) {
+                    VoiceMode.HINDI -> "hi"
+                    VoiceMode.ENGLISH -> "en"
+                    VoiceMode.AUTO -> {
+                        if (com.krishimitra.app.voice.LanguageDetector.isHindiResponsePreferred(query, VoiceMode.AUTO)) "hi"
+                        else if (isAppHindi) "hi"
+                        else "en"
+                    }
                 }
-            }
-            val reply = aiRouter.routeQuery(query, forceLang = forceLang)
-            messages.add(reply)
-            listState.animateScrollToItem(messages.size - 1)
-            voiceManager.speak(reply.text, forceHindi = (forceLang == "hi"))
-        }
-    }
-
-    val speechIntentLauncher = rememberLauncherForActivityResult(
-        contract = ActivityResultContracts.StartActivityForResult()
-    ) { result ->
-        if (result.resultCode == Activity.RESULT_OK && result.data != null) {
-            val matches = result.data?.getStringArrayListExtra(RecognizerIntent.EXTRA_RESULTS)
-            if (!matches.isNullOrEmpty()) {
-                sendMessage(matches[0])
+                val reply = aiRouter.routeQuery(query, forceLang = forceLang)
+                messages.add(reply)
+                listState.animateScrollToItem(messages.size - 1)
+                voiceManager.speak(reply.text, forceHindi = (forceLang == "hi"))
+            } catch (e: Throwable) {
+                Log.e("ChatScreen", "Error answering query: ${e.message}", e)
+                messages.add(
+                    ChatMessage(
+                        text = "क्षमा करें, जानकारी लोड करने में समस्या आई। कृपया अपना प्रश्न दोबारा पूछें।",
+                        isUser = false,
+                        source = "कृषिमित्र सहायक",
+                        isVerified = false
+                    )
+                )
             }
         }
     }
@@ -127,16 +123,11 @@ fun ChatScreen(
     val audioPermissionLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.RequestPermission()
     ) { granted ->
-        hasAudioPermission = granted
         if (granted) {
             try {
                 voiceManager.startListening { query -> sendMessage(query) }
-            } catch (e: Exception) {
-                try {
-                    speechIntentLauncher.launch(voiceManager.createSpeechIntent())
-                } catch (ex: Exception) {
-                    Log.e("ChatScreen", "Speech launch error: ${ex.message}")
-                }
+            } catch (e: Throwable) {
+                Log.e("ChatScreen", "Error starting speech listening: ${e.message}")
             }
         }
     }
@@ -157,9 +148,9 @@ fun ChatScreen(
         ) {
             Text(
                 text = when (voiceMode) {
-                    VoiceMode.AUTO -> stringResource(R.string.voice_mode_auto)
-                    VoiceMode.HINDI -> stringResource(R.string.voice_mode_hi)
-                    VoiceMode.ENGLISH -> stringResource(R.string.voice_mode_en)
+                    VoiceMode.AUTO -> "आवाज: स्वतः (हिंदी/अंग्रेजी)"
+                    VoiceMode.HINDI -> "आवाज: हिंदी (Hindi)"
+                    VoiceMode.ENGLISH -> "Voice: English"
                 },
                 style = MaterialTheme.typography.labelMedium.copy(
                     color = GreenPrimary,
@@ -188,7 +179,7 @@ fun ChatScreen(
             )
         }
 
-        Divider(color = CardBorder, thickness = 0.8.dp)
+        HorizontalDivider(color = CardBorder, thickness = 0.8.dp)
 
         // Chat Message List
         LazyColumn(
@@ -202,7 +193,13 @@ fun ChatScreen(
             items(messages) { msg ->
                 ChatBubble(
                     message = msg,
-                    onSpeakClick = { voiceManager.speak(msg.text) }
+                    onSpeakClick = {
+                        try {
+                            voiceManager.speak(msg.text)
+                        } catch (e: Throwable) {
+                            Log.e("ChatScreen", "Speak click error: ${e.message}")
+                        }
+                    }
                 )
             }
         }
@@ -234,7 +231,7 @@ fun ChatScreen(
             }
         }
 
-        // Hold-to-Talk Status Indicator
+        // Listening Status Indicator
         AnimatedVisibility(visible = isListening) {
             Row(
                 modifier = Modifier
@@ -252,7 +249,7 @@ fun ChatScreen(
                 )
                 Spacer(modifier = Modifier.width(6.dp))
                 Text(
-                    text = stringResource(R.string.assistant_listening),
+                    text = "सुन रहे हैं... बोलिए (Listening...)",
                     color = AlertRed,
                     fontWeight = FontWeight.Bold,
                     fontSize = 13.sp
@@ -260,7 +257,7 @@ fun ChatScreen(
             }
         }
 
-        // Voice Error / Offline Notice Banner
+        // Voice Error Banner
         AnimatedVisibility(visible = lastVoiceError != null && !isListening) {
             lastVoiceError?.let { err ->
                 Row(
@@ -302,7 +299,7 @@ fun ChatScreen(
                 modifier = Modifier.weight(1f),
                 placeholder = {
                     Text(
-                        text = stringResource(R.string.assistant_hint),
+                        text = "हिंदी या अंग्रेजी में प्रश्न पूछें...",
                         fontSize = 13.sp,
                         color = TextSecondary
                     )
@@ -315,7 +312,6 @@ fun ChatScreen(
                 maxLines = 3
             )
 
-            // If text typed, show Send button; otherwise Hold-to-Talk Mic button
             if (inputText.isNotBlank()) {
                 IconButton(
                     onClick = { sendMessage(inputText) },
@@ -331,10 +327,14 @@ fun ChatScreen(
                     )
                 }
             } else {
-                // Responsive Tap-to-Talk Mic Button
                 IconButton(
                     onClick = {
-                        if (!hasAudioPermission) {
+                        val hasMicPermission = ContextCompat.checkSelfPermission(
+                            context,
+                            Manifest.permission.RECORD_AUDIO
+                        ) == PackageManager.PERMISSION_GRANTED
+
+                        if (!hasMicPermission) {
                             audioPermissionLauncher.launch(Manifest.permission.RECORD_AUDIO)
                         } else if (isListening) {
                             voiceManager.stopListening()
@@ -343,12 +343,8 @@ fun ChatScreen(
                                 voiceManager.startListening { query ->
                                     sendMessage(query)
                                 }
-                            } catch (e: Exception) {
-                                try {
-                                    speechIntentLauncher.launch(voiceManager.createSpeechIntent())
-                                } catch (ex: Exception) {
-                                    Log.e("ChatScreen", "Could not launch speech intent: ${ex.message}")
-                                }
+                            } catch (e: Throwable) {
+                                Log.e("ChatScreen", "Mic start error: ${e.message}")
                             }
                         }
                     },
@@ -363,39 +359,6 @@ fun ChatScreen(
                         tint = Color.White,
                         modifier = Modifier.size(26.dp)
                     )
-                }
-            }
-
-        }
-
-        // Voice Error / Alternate Input Helper
-        if (lastVoiceError != null && !isListening) {
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .background(Color(0xFFFFF3E0))
-                    .padding(horizontal = 12.dp, vertical = 4.dp),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Text(
-                    text = lastVoiceError ?: "",
-                    color = Color(0xFFE65100),
-                    fontSize = 11.sp,
-                    modifier = Modifier.weight(1f),
-                    maxLines = 1
-                )
-                TextButton(
-                    onClick = {
-                        try {
-                            speechIntentLauncher.launch(voiceManager.createSpeechIntent())
-                        } catch (e: Exception) {
-                            Log.e("ChatScreen", "Fallback launch failed: ${e.message}")
-                        }
-                    },
-                    contentPadding = PaddingValues(horizontal = 8.dp, vertical = 2.dp)
-                ) {
-                    Text("वॉयस डायलॉग", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = GreenPrimary)
                 }
             }
         }
@@ -438,7 +401,7 @@ fun ChatBubble(
 
                 if (!isUser) {
                     Spacer(modifier = Modifier.height(8.dp))
-                    Divider(color = Color(0xFFEEEEEE), thickness = 0.6.dp)
+                    HorizontalDivider(color = Color(0xFFEEEEEE), thickness = 0.6.dp)
                     Spacer(modifier = Modifier.height(6.dp))
 
                     Row(
@@ -456,7 +419,7 @@ fun ChatBubble(
                             )
                             Spacer(modifier = Modifier.width(4.dp))
                             Text(
-                                text = message.source ?: stringResource(R.string.assistant_verified_tag),
+                                text = message.source ?: "आईसीएआर / सरकारी प्रमाणित",
                                 style = MaterialTheme.typography.labelSmall.copy(
                                     fontSize = 10.sp,
                                     color = TextSecondary
