@@ -31,15 +31,19 @@ class KrishiMitraApp : Application() {
 
     override fun onCreate() {
         super.onCreate()
-        languageManager = com.krishimitra.app.domain.language.LanguageManager.getInstance(this)
-        dbHelper = DatabaseHelper.getInstance(this)
-        apiClient = ApiClient(this)
-        localNlpEngine = LocalNLPEngine(this, dbHelper)
-        ragEngine = com.krishimitra.app.domain.rag.LocalRAGEngine(this, dbHelper)
-        languageModel = com.krishimitra.app.ml.OnnxLanguageModel(this)
-        aiRouter = HybridAIRouter(ragEngine, languageModel, localNlpEngine, apiClient)
-        diseaseClassifier = OnnxDiseaseClassifier(this)
-        voiceManager = VoiceManager(this)
+        try {
+            languageManager = com.krishimitra.app.domain.language.LanguageManager.getInstance(this)
+            dbHelper = DatabaseHelper.getInstance(this)
+            apiClient = ApiClient(this)
+            localNlpEngine = LocalNLPEngine(this, dbHelper)
+            ragEngine = com.krishimitra.app.domain.rag.LocalRAGEngine(this, dbHelper)
+            languageModel = com.krishimitra.app.ml.OnnxLanguageModel(this)
+            aiRouter = HybridAIRouter(ragEngine, languageModel, localNlpEngine, apiClient)
+            diseaseClassifier = OnnxDiseaseClassifier(this)
+            voiceManager = VoiceManager(this)
+        } catch (e: Throwable) {
+            android.util.Log.e("KrishiMitraApp", "Initialization exception: ${e.message}", e)
+        }
     }
 
     override fun onTerminate() {
