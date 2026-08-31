@@ -21,7 +21,7 @@ class DatabaseHelper(private val context: Context) : SQLiteOpenHelper(context, D
 
     companion object {
         const val DB_NAME = "krishi_knowledge.db"
-        const val DB_VERSION = 3
+        const val DB_VERSION = 4
         private const val TAG = "DatabaseHelper"
 
         @Volatile
@@ -57,8 +57,15 @@ class DatabaseHelper(private val context: Context) : SQLiteOpenHelper(context, D
                     val cropCount = if (cCrops.moveToFirst()) cCrops.getInt(0) else 0
                     cCrops.close()
 
-                    if (!hasMarketTable || !hasRagTable || cropCount < 40) {
-                        Log.i(TAG, "Existing local database is outdated (hasMarketTable=$hasMarketTable, hasRagTable=$hasRagTable, cropCount=$cropCount). Refreshing from assets.")
+                    val ragCount = if (hasRagTable) {
+                        val cCount = db.rawQuery("SELECT count(*) FROM rag_knowledge", null)
+                        val cnt = if (cCount.moveToFirst()) cCount.getInt(0) else 0
+                        cCount.close()
+                        cnt
+                    } else 0
+
+                    if (!hasMarketTable || !hasRagTable || cropCount < 40 || ragCount < 400) {
+                        Log.i(TAG, "Existing local database is outdated (hasMarketTable=$hasMarketTable, hasRagTable=$hasRagTable, cropCount=$cropCount, ragCount=$ragCount). Refreshing from assets.")
                         needsCopy = true
                     }
                 }

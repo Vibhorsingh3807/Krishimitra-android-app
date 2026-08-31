@@ -94,7 +94,7 @@ class LocalRAGEngine(
                         RAGKnowledgeRecord(
                             id = "asset_$i",
                             topic = obj.optString("intent", "agriculture"),
-                            cropId = obj.optString("crop_id", null),
+                            cropId = if (obj.has("crop_id") && !obj.isNull("crop_id")) obj.getString("crop_id") else null,
                             questionEn = obj.optString("sample_question", ""),
                             questionHi = obj.optString("sample_question", ""),
                             answerEn = obj.optString("answer_en", ""),
@@ -121,38 +121,69 @@ class LocalRAGEngine(
 
     fun detectCropId(query: String): String? {
         val q = query.lowercase(Locale.ROOT)
+        if (q.contains("solar") || q.contains("solar pump") || q.contains("सोलर")) {
+            return null
+        }
+
         val cropAliases = mapOf(
-            "rice" to listOf("rice", "paddy", "धान", "चावल", "dhan", "chawal"),
-            "wheat" to listOf("wheat", "गेहूं", "गेहू", "gehu", "gehun"),
+            "rice" to listOf("rice", "paddy", "धान", "चावल", "dhan", "chawal", "basmati", "बासमती", "sona masuri", "matta"),
+            "wheat" to listOf("wheat", "गेहूं", "गेहू", "gehu", "gehun", "sharbati", "शरबती", "lokwan", "लोकवन", "hd 2967", "dbw 187"),
             "maize" to listOf("maize", "corn", "मक्का", "मकई", "makka", "makai", "bhutta"),
-            "cotton" to listOf("cotton", "कपास", "रुई", "kapas"),
+            "cotton" to listOf("cotton", "कपास", "रुई", "kapas", "कापूस", "bt cotton"),
             "sugarcane" to listOf("sugarcane", "गन्ना", "ईख", "ganna"),
-            "mustard" to listOf("mustard", "सरसों", "राई", "sarson", "sarso", "rai"),
+            "mustard" to listOf("mustard", "सरसों", "राई", "sarson", "sarso", "rai", "toria"),
             "soybean" to listOf("soybean", "सोयाबीन", "soyabean"),
-            "chickpea" to listOf("chickpea", "gram", "चना", "chana"),
+            "chickpea" to listOf("chickpea", "gram", "चना", "chana", "chane", "bengal gram"),
             "groundnut" to listOf("groundnut", "peanut", "मूंगफली", "mungfali", "moongphali"),
-            "potato" to listOf("potato", "आलू", "alu", "aaloo"),
+            "potato" to listOf("potato", "आलू", "alu", "aaloo", "kufri", "कुफरी"),
             "tomato" to listOf("tomato", "टमाटर", "tamatar"),
-            "onion" to listOf("onion", "प्याज", "pyaj", "pyaz", "kanda"),
-            "chilli" to listOf("chilli", "chili", "मिर्च", "mirch", "mirchi"),
-            "mango" to listOf("mango", "आम", "aam"),
-            "banana" to listOf("banana", "केला", "kela"),
-            "pigeon_pea" to listOf("arhar", "tur", "tuar", "अरहर", "तुअर", "pigeon pea"),
-            "pearl_millet" to listOf("bajra", "बाजरा", "pearl millet", "millet"),
-            "sorghum" to listOf("jowar", "ज्वार", "sorghum"),
-            "black_gram" to listOf("urad", "उड़द", "black gram", "mash"),
-            "lentil" to listOf("masoor", "मसूर", "lentil"),
-            "garlic" to listOf("garlic", "लहसुन", "lahsun"),
-            "ginger" to listOf("ginger", "अदरक", "adrak"),
+            "onion" to listOf("onion", "प्याज", "kanda", "pyaj", "कांदा"),
+            "chilli" to listOf("chilli", "chillies", "chili", "मिर्च", "mirch", "mirchi"),
+            "mango" to listOf("mango", "aam", "आम"),
+            "banana" to listOf("banana", "kela", "केला"),
+            "bajra" to listOf("bajra", "बाजरा", "pearl millet", "millet"),
+            "jowar" to listOf("jowar", "ज्वार", "sorghum"),
+            "ragi" to listOf("ragi", "रागी", "finger millet", "मडुआ"),
+            "arhar" to listOf("arhar", "tur", "tuar", "अरहर", "तुअर", "तूर", "pigeon pea", "red gram"),
+            "moong" to listOf("moong", "मूंग", "green gram"),
+            "urad" to listOf("urad", "उड़द", "black gram", "mash"),
+            "masoor" to listOf("masoor", "मसूर", "lentil"),
+            "peas" to listOf("peas", "मटर", "matar"),
+            "sesame" to listOf("sesame", "तिल", "til"),
+            "sunflower" to listOf("sunflower", "सूरजमुखी", "surajmukhi"),
+            "safflower" to listOf("safflower", "कुसुम", "kusum"),
+            "brinjal" to listOf("brinjal", "eggplant", "aubergine", "baingan", "बैंगन"),
+            "okra" to listOf("okra", "ladyfinger", "bhindi", "भिंडी"),
+            "cabbage" to listOf("cabbage", "पत्तागोभी", "patta gobhi", "bandha gobhi"),
+            "cauliflower" to listOf("cauliflower", "फूलगोभी", "phool gobhi"),
+            "carrot" to listOf("carrot", "गाजर", "gajar"),
+            "radish" to listOf("radish", "मूली", "mooli"),
+            "green_peas" to listOf("green peas", "हरी मटर"),
+            "papaya" to listOf("papaya", "पपीता", "papita"),
+            "guava" to listOf("guava", "अमरूद", "amrood"),
+            "citrus" to listOf("citrus", "नींबू", "nimbu", "संत्रा", "santara", "orange", "kinnow"),
+            "grapes" to listOf("grapes", "अंगूर", "angoor"),
+            "pomegranate" to listOf("pomegranate", "अनार", "anaar"),
+            "watermelon" to listOf("watermelon", "तरबूज", "tarbooz"),
             "turmeric" to listOf("turmeric", "हल्दी", "haldi"),
-            "brinjal" to listOf("brinjal", "eggplant", "बैंगन", "baingan"),
-            "okra" to listOf("okra", "ladyfinger", "भिंडी", "bhindi")
+            "ginger" to listOf("ginger", "अदरक", "adrak"),
+            "garlic" to listOf("garlic", "लहसुन", "lahsun"),
+            "coriander" to listOf("coriander", "धनिया", "dhaniya"),
+            "cumin" to listOf("cumin", "जीरा", "jeera"),
+            "black_pepper" to listOf("black pepper", "काली मिर्च", "kali mirch"),
+            "tea" to listOf("tea", "चाय", "chai"),
+            "coffee" to listOf("coffee", "कॉफी"),
+            "rubber" to listOf("rubber", "रबर"),
+            "jute" to listOf("jute", "जूट", "patson", "पटसन")
         )
 
-        for ((cropId, aliases) in cropAliases) {
-            for (alias in aliases) {
-                if (q.contains(alias)) return cropId
-            }
+        // Check longest alias match first
+        val sortedAliases = cropAliases.flatMap { (cropId, aliases) ->
+            aliases.map { it to cropId }
+        }.sortedByDescending { it.first.length }
+
+        for ((alias, cropId) in sortedAliases) {
+            if (q.contains(alias)) return cropId
         }
         return null
     }
@@ -184,7 +215,22 @@ class LocalRAGEngine(
             val rec = indexedRecords[i]
 
             // Boost score if detected crop matches document crop
-            val cropBoost = if (detectedCrop != null && rec.cropId == detectedCrop) 1.5f else 1.0f
+            val cropBoost = if (detectedCrop != null && rec.cropId == detectedCrop) 1.8f else 1.0f
+
+            // Intent / Topic boost based on farmer query keywords
+            val qLower = query.lowercase(Locale.ROOT)
+            val topicBoost = when (rec.topic) {
+                "market_price" -> if (qLower.contains("bhav") || qLower.contains("mandi") || qLower.contains("भाव") || qLower.contains("मंडी") || qLower.contains("price") || qLower.contains("rate") || qLower.contains("दाम")) 2.2f else 1.0f
+                "variety" -> if (qLower.contains("variety") || qLower.contains("kism") || qLower.contains("किस्म") || qLower.contains("उन्नत") || qLower.contains("seed") || qLower.contains("beej") || qLower.contains("बीज")) 2.2f else 1.0f
+                "scheme" -> if (qLower.contains("scheme") || qLower.contains("yojana") || qLower.contains("योजना") || qLower.contains("subsidy") || qLower.contains("सब्सिडी") || qLower.contains("kisan") || qLower.contains("pm-kisan")) 2.0f else 1.0f
+                "loan" -> if (qLower.contains("loan") || qLower.contains("rin") || qLower.contains("ऋण") || qLower.contains("लोन") || qLower.contains("kcc") || qLower.contains("credit") || qLower.contains("ब्याज")) 2.0f else 1.0f
+                "disease_treatment" -> if (qLower.contains("disease") || qLower.contains("rog") || qLower.contains("रोग") || qLower.contains("ilaj") || qLower.contains("इलाज") || qLower.contains("upchar") || qLower.contains("उपचार") || qLower.contains("dawa") || qLower.contains("दवाई") || qLower.contains("blight") || qLower.contains("rust") || qLower.contains("झुलसा") || qLower.contains("रतुआ")) 2.0f else 1.0f
+                "fertilizer" -> if (qLower.contains("fertilizer") || qLower.contains("khad") || qLower.contains("खाद") || qLower.contains("urea") || qLower.contains("यूरिया") || qLower.contains("dap") || qLower.contains("उर्वरक")) 2.0f else 1.0f
+                "irrigation" -> if (qLower.contains("irrigation") || qLower.contains("pani") || qLower.contains("पानी") || qLower.contains("sinchai") || qLower.contains("सिंचाई")) 2.0f else 1.0f
+                "sowing" -> if (qLower.contains("sowing") || qLower.contains("buwai") || qLower.contains("बुवाई") || qLower.contains("samay") || qLower.contains("season") || qLower.contains("मौसम")) 2.0f else 1.0f
+                "pests" -> if (qLower.contains("pest") || qLower.contains("keet") || qLower.contains("कीट") || qLower.contains("कीड़ा") || qLower.contains("borer")) 2.0f else 1.0f
+                else -> 1.0f
+            }
 
             // Term frequency in doc
             val tfMap = mutableMapOf<String, Int>()
@@ -210,7 +256,7 @@ class LocalRAGEngine(
                 docScore = 1.0f
             }
 
-            scores[i] = docScore * cropBoost
+            scores[i] = docScore * cropBoost * topicBoost
         }
 
         // Rank by highest score
