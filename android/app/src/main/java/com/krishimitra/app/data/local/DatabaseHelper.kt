@@ -6,11 +6,14 @@ import android.database.sqlite.SQLiteDatabase
 import android.database.sqlite.SQLiteOpenHelper
 import android.util.Log
 import com.krishimitra.app.domain.model.Crop
+import com.krishimitra.app.domain.model.CropVariety
 import com.krishimitra.app.domain.model.Disease
 import com.krishimitra.app.domain.model.FarmerExperience
 import com.krishimitra.app.domain.model.Loan
+import com.krishimitra.app.domain.model.MarketPrice
 import com.krishimitra.app.domain.model.RAGKnowledgeRecord
 import com.krishimitra.app.domain.model.Scheme
+
 import java.io.File
 import java.io.FileOutputStream
 
@@ -18,7 +21,7 @@ class DatabaseHelper(private val context: Context) : SQLiteOpenHelper(context, D
 
     companion object {
         const val DB_NAME = "krishi_knowledge.db"
-        const val DB_VERSION = 2
+        const val DB_VERSION = 3
         private const val TAG = "DatabaseHelper"
 
         @Volatile
@@ -39,26 +42,28 @@ class DatabaseHelper(private val context: Context) : SQLiteOpenHelper(context, D
         val dbFile = context.getDatabasePath(DB_NAME)
         var needsCopy = !dbFile.exists()
 
-        if (!needsCopy) {
-            // Check if rag_knowledge table exists and has rows
+        if (dbFile.exists()) {
             try {
                 SQLiteDatabase.openDatabase(dbFile.path, null, SQLiteDatabase.OPEN_READONLY).use { db ->
-                    val cursor = db.rawQuery("SELECT count(*) FROM sqlite_master WHERE type='table' AND name='rag_knowledge'", null)
-                    val hasTable = cursor.moveToFirst() && cursor.getInt(0) > 0
-                    cursor.close()
-                    if (!hasTable) {
+                    val cTable = db.rawQuery("SELECT count(*) FROM sqlite_master WHERE type='table' AND name='market_prices'", null)
+                    val hasMarketTable = cTable.moveToFirst() && cTable.getInt(0) > 0
+                    cTable.close()
+
+                    val cRag = db.rawQuery("SELECT count(*) FROM sqlite_master WHERE type='table' AND name='rag_knowledge'", null)
+                    val hasRagTable = cRag.moveToFirst() && cRag.getInt(0) > 0
+                    cRag.close()
+
+                    val cCrops = db.rawQuery("SELECT count(*) FROM crops", null)
+                    val cropCount = if (cCrops.moveToFirst()) cCrops.getInt(0) else 0
+                    cCrops.close()
+
+                    if (!hasMarketTable || !hasRagTable || cropCount < 40) {
+                        Log.i(TAG, "Existing local database is outdated (hasMarketTable=$hasMarketTable, hasRagTable=$hasRagTable, cropCount=$cropCount). Refreshing from assets.")
                         needsCopy = true
-                    } else {
-                        // Also verify it has rows
-                        val countCursor = db.rawQuery("SELECT count(*) FROM rag_knowledge", null)
-                        val count = if (countCursor.moveToFirst()) countCursor.getInt(0) else 0
-                        countCursor.close()
-                        if (count == 0) {
-                            needsCopy = true
-                        }
                     }
                 }
             } catch (e: Exception) {
+                Log.w(TAG, "Error checking existing database: ${e.message}, refreshing from assets.")
                 needsCopy = true
             }
         }
@@ -78,7 +83,7 @@ class DatabaseHelper(private val context: Context) : SQLiteOpenHelper(context, D
                         input.copyTo(output)
                     }
                 }
-                Log.i(TAG, "Copied pre-seeded knowledge database from assets successfully.")
+                Log.i(TAG, "Copied updated pre-seeded knowledge database from assets successfully.")
             } catch (e: Exception) {
                 Log.e(TAG, "Failed to copy database from assets: ${e.message}", e)
             }
@@ -90,16 +95,18 @@ class DatabaseHelper(private val context: Context) : SQLiteOpenHelper(context, D
     }
 
     override fun onUpgrade(db: SQLiteDatabase?, oldVersion: Int, newVersion: Int) {
-        val dbFile = context.getDatabasePath(DB_NAME)
-        try {
-            context.assets.open(DB_NAME).use { input ->
-                FileOutputStream(dbFile).use { output ->
-                    input.copyTo(output)
+        if (newVersion > oldVersion) {
+            val dbFile = context.getDatabasePath(DB_NAME)
+            try {
+                context.assets.open(DB_NAME).use { input ->
+                    FileOutputStream(dbFile).use { output ->
+                        input.copyTo(output)
+                    }
                 }
+                Log.i(TAG, "Upgraded local database to version $newVersion from assets.")
+            } catch (e: Exception) {
+                Log.e(TAG, "Failed to upgrade database: ${e.message}")
             }
-            Log.i(TAG, "Upgraded knowledge database to version $newVersion successfully.")
-        } catch (e: Exception) {
-            Log.e(TAG, "Failed to upgrade database from assets: ${e.message}", e)
         }
     }
 
@@ -404,6 +411,174 @@ class DatabaseHelper(private val context: Context) : SQLiteOpenHelper(context, D
             }
         } catch (e: Exception) {
             Log.e(TAG, "Error fetching RAG knowledge: ${e.message}")
+        } finally {
+            cursor?.close()
+        }
+        return list
+    }
+
+    fun getLatestMarketPrice(cropId: String?, district: String? = null, market: String? = null): MarketPrice? {
+        val db = readableDatabase
+        var cursor: Cursor? = null
+        try {
+            val selectionClauses = mutableListOf<String>()
+            val selectionArgs = mutableListOf<String>()
+
+            if (!cropId.isNullOrBlank()) {
+                selectionClauses.add("crop_id = ?")
+                selectionArgs.add(cropId)
+            }
+            if (!district.isNullOrBlank()) {
+                selectionClauses.add("district LIKE ?")
+                selectionArgs.add("%$district%")
+            }
+            if (!market.isNullOrBlank()) {
+                selectionClauses.add("market LIKE ?")
+                selectionArgs.add("%$market%")
+            }
+
+            val where = if (selectionClauses.isNotEmpty()) selectionClauses.joinToString(" AND ") else null
+            val args = if (selectionArgs.isNotEmpty()) selectionArgs.toTypedArray() else null
+
+            cursor = db.query(
+                "market_prices",
+                null,
+                where,
+                args,
+                null,
+                null,
+                "price_date DESC, id DESC",
+                "1"
+            )
+
+            if (cursor.moveToFirst()) {
+                return MarketPrice(
+                    id = cursor.getInt(cursor.getColumnIndexOrThrow("id")),
+                    cropId = cursor.getString(cursor.getColumnIndexOrThrow("crop_id")),
+                    commodity = cursor.getString(cursor.getColumnIndexOrThrow("commodity")),
+                    variety = cursor.getString(cursor.getColumnIndexOrThrow("variety")),
+                    state = cursor.getString(cursor.getColumnIndexOrThrow("state")),
+                    district = cursor.getString(cursor.getColumnIndexOrThrow("district")),
+                    market = cursor.getString(cursor.getColumnIndexOrThrow("market")),
+                    minPrice = cursor.getFloat(cursor.getColumnIndexOrThrow("min_price")),
+                    maxPrice = cursor.getFloat(cursor.getColumnIndexOrThrow("max_price")),
+                    modalPrice = cursor.getFloat(cursor.getColumnIndexOrThrow("modal_price")),
+                    priceDate = cursor.getString(cursor.getColumnIndexOrThrow("price_date")),
+                    unit = cursor.getString(cursor.getColumnIndexOrThrow("unit")),
+                    source = cursor.getString(cursor.getColumnIndexOrThrow("source"))
+                )
+            }
+        } catch (e: Exception) {
+            Log.e(TAG, "Error fetching market price: ${e.message}")
+        } finally {
+            cursor?.close()
+        }
+        return null
+    }
+
+    fun compareMarkets(cropId: String?): List<MarketPrice> {
+        val list = mutableListOf<MarketPrice>()
+        val db = readableDatabase
+        var cursor: Cursor? = null
+        try {
+            val where = if (!cropId.isNullOrBlank()) "crop_id = ?" else null
+            val args = if (!cropId.isNullOrBlank()) arrayOf(cropId) else null
+
+            cursor = db.query(
+                "market_prices",
+                null,
+                where,
+                args,
+                null,
+                null,
+                "modal_price DESC",
+                "10"
+            )
+
+            while (cursor.moveToNext()) {
+                list.add(
+                    MarketPrice(
+                        id = cursor.getInt(cursor.getColumnIndexOrThrow("id")),
+                        cropId = cursor.getString(cursor.getColumnIndexOrThrow("crop_id")),
+                        commodity = cursor.getString(cursor.getColumnIndexOrThrow("commodity")),
+                        variety = cursor.getString(cursor.getColumnIndexOrThrow("variety")),
+                        state = cursor.getString(cursor.getColumnIndexOrThrow("state")),
+                        district = cursor.getString(cursor.getColumnIndexOrThrow("district")),
+                        market = cursor.getString(cursor.getColumnIndexOrThrow("market")),
+                        minPrice = cursor.getFloat(cursor.getColumnIndexOrThrow("min_price")),
+                        maxPrice = cursor.getFloat(cursor.getColumnIndexOrThrow("max_price")),
+                        modalPrice = cursor.getFloat(cursor.getColumnIndexOrThrow("modal_price")),
+                        priceDate = cursor.getString(cursor.getColumnIndexOrThrow("price_date")),
+                        unit = cursor.getString(cursor.getColumnIndexOrThrow("unit")),
+                        source = cursor.getString(cursor.getColumnIndexOrThrow("source"))
+                    )
+                )
+            }
+        } catch (e: Exception) {
+            Log.e(TAG, "Error comparing markets: ${e.message}")
+        } finally {
+            cursor?.close()
+        }
+        return list
+    }
+
+    fun getCropVarieties(cropId: String): List<CropVariety> {
+        val list = mutableListOf<CropVariety>()
+        val db = readableDatabase
+        var cursor: Cursor? = null
+        try {
+            cursor = db.rawQuery("SELECT * FROM crop_varieties WHERE crop_id = ?", arrayOf(cropId))
+            while (cursor.moveToNext()) {
+                list.add(
+                    CropVariety(
+                        id = cursor.getString(cursor.getColumnIndexOrThrow("id")),
+                        cropId = cursor.getString(cursor.getColumnIndexOrThrow("crop_id")),
+                        varietyName = cursor.getString(cursor.getColumnIndexOrThrow("variety_name")),
+                        category = cursor.getString(cursor.getColumnIndexOrThrow("category")),
+                        durationDays = cursor.getString(cursor.getColumnIndexOrThrow("duration_days")),
+                        yieldPotential = cursor.getString(cursor.getColumnIndexOrThrow("yield_potential")),
+                        suitableZones = cursor.getString(cursor.getColumnIndexOrThrow("suitable_zones")),
+                        specialFeatures = cursor.getString(cursor.getColumnIndexOrThrow("special_features")),
+                        specialFeaturesHi = cursor.getString(cursor.getColumnIndexOrThrow("special_features_hi")),
+                        source = cursor.getString(cursor.getColumnIndexOrThrow("source"))
+                    )
+                )
+            }
+        } catch (e: Exception) {
+            Log.e(TAG, "Error fetching varieties for $cropId: ${e.message}")
+        } finally {
+            cursor?.close()
+        }
+        return list
+    }
+
+    fun getAllMarketPrices(): List<MarketPrice> {
+        val list = mutableListOf<MarketPrice>()
+        val db = readableDatabase
+        var cursor: Cursor? = null
+        try {
+            cursor = db.rawQuery("SELECT * FROM market_prices ORDER BY price_date DESC, modal_price DESC", null)
+            while (cursor.moveToNext()) {
+                list.add(
+                    MarketPrice(
+                        id = cursor.getInt(cursor.getColumnIndexOrThrow("id")),
+                        cropId = cursor.getString(cursor.getColumnIndexOrThrow("crop_id")),
+                        commodity = cursor.getString(cursor.getColumnIndexOrThrow("commodity")),
+                        variety = cursor.getString(cursor.getColumnIndexOrThrow("variety")),
+                        state = cursor.getString(cursor.getColumnIndexOrThrow("state")),
+                        district = cursor.getString(cursor.getColumnIndexOrThrow("district")),
+                        market = cursor.getString(cursor.getColumnIndexOrThrow("market")),
+                        minPrice = cursor.getFloat(cursor.getColumnIndexOrThrow("min_price")),
+                        maxPrice = cursor.getFloat(cursor.getColumnIndexOrThrow("max_price")),
+                        modalPrice = cursor.getFloat(cursor.getColumnIndexOrThrow("modal_price")),
+                        priceDate = cursor.getString(cursor.getColumnIndexOrThrow("price_date")),
+                        unit = cursor.getString(cursor.getColumnIndexOrThrow("unit")),
+                        source = cursor.getString(cursor.getColumnIndexOrThrow("source"))
+                    )
+                )
+            }
+        } catch (e: Exception) {
+            Log.e(TAG, "Error fetching all market prices: ${e.message}")
         } finally {
             cursor?.close()
         }

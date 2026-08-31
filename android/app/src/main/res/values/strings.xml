@@ -29,8 +29,11 @@
     <string name="action_schemes_desc">PM-KISAN, PMFBY, KCC &amp; Subsidies</string>
     <string name="action_loans">Agricultural Loans</string>
     <string name="action_loans_desc">KCC crop credit, gold loans &amp; NABARD</string>
-    <string name="action_crops">Crop Guide</string>
-    <string name="action_crops_desc">ICAR cultivation manuals for 15 Indian crops</string>
+    <string name="action_mandi">Mandi Prices &amp; Trends</string>
+    <string name="action_mandi_desc">Live/recent APMC mandi prices &amp; comparisons</string>
+    <string name="action_crops">Crop Guide (49 Crops)</string>
+    <string name="action_crops_desc">ICAR cultivation manuals for 49 Indian crops</string>
+
 
     <!-- AI Assistant -->
     <string name="assistant_title">KrishiMitra AI Assistant</string>

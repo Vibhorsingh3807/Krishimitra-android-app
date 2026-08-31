@@ -164,3 +164,32 @@ data class RAGKnowledgeRecord(
     val category: String = "VERIFIED_KNOWLEDGE" // "VERIFIED_KNOWLEDGE" or "FARMER_EXPERIENCE"
 )
 
+data class MarketPrice(
+    val id: Int,
+    val cropId: String?,
+    val commodity: String,
+    val variety: String?,
+    val state: String,
+    val district: String,
+    val market: String,
+    val minPrice: Float,
+    val maxPrice: Float,
+    val modalPrice: Float,
+    val priceDate: String,
+    val unit: String = "₹/Quintal",
+    val source: String
+)
+
+data class CropVariety(
+    val id: String,
+    val cropId: String,
+    val varietyName: String,
+    val category: String?,
+    val durationDays: String?,
+    val yieldPotential: String?,
+    val suitableZones: String?,
+    val specialFeatures: String?,
+    val specialFeaturesHi: String?,
+    val source: String?
+)
+

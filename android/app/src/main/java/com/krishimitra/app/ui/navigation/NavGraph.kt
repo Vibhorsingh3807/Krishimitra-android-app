@@ -50,8 +50,12 @@ fun KrishiNavGraph(
         composable(Screen.CropGuide.route) {
             CropGuideScreen(dbHelper = dbHelper)
         }
+        composable(Screen.Mandi.route) {
+            MandiScreen(dbHelper = dbHelper, onAskAI = { q -> navController.navigate(Screen.Chat.route) })
+        }
         composable(Screen.Sources.route) {
             SourcesScreen()
         }
     }
 }
+

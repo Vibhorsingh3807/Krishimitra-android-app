@@ -74,6 +74,13 @@ fun HomeScreen(
             Screen.Loans.route
         ),
         ActionCardItem(
+            R.string.action_mandi,
+            R.string.action_mandi_desc,
+            Icons.Default.TrendingUp,
+            Color(0xFFE65100),
+            Screen.Mandi.route
+        ),
+        ActionCardItem(
             R.string.action_crops,
             R.string.action_crops_desc,
             Icons.Default.Grass,
@@ -81,6 +88,7 @@ fun HomeScreen(
             Screen.CropGuide.route
         )
     )
+
 
     Column(
         modifier = Modifier

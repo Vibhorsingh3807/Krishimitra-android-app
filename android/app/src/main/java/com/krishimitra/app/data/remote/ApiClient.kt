@@ -38,7 +38,7 @@ class ApiClient(private val context: Context) {
         return caps.hasCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET)
     }
 
-    suspend fun queryCloudAI(query: String, crop: String? = null): JsonObject? = withContext(Dispatchers.IO) {
+    suspend fun queryCloudAI(query: String, crop: String? = null, district: String? = null): JsonObject? = withContext(Dispatchers.IO) {
         if (!isNetworkAvailable()) return@withContext null
 
         try {
@@ -46,6 +46,7 @@ class ApiClient(private val context: Context) {
                 addProperty("query", query)
                 addProperty("language", "auto")
                 if (crop != null) addProperty("crop", crop)
+                if (district != null) addProperty("district", district)
             }
 
             val body = json.toString().toRequestBody("application/json".toMediaType())

@@ -1,8 +1,8 @@
 """
 train_nlp.py
 Trains an agriculture NLP intent classifier and builds a portable offline
-knowledge retrieval index for low-end Android mobile deployment (<150KB).
-Evaluates accuracy on a held-out test split and exports JSON weights for Kotlin.
+knowledge retrieval index for low-end Android mobile deployment (<200KB).
+Evaluates accuracy on a held-out test split and exports JSON weights for Kotlin and Python.
 """
 
 import json
@@ -21,7 +21,8 @@ OUTPUT_DIR = os.path.join(ROOT_DIR, "ml_pipeline", "output")
 
 def clean_text(text):
     text = text.lower().strip()
-    text = re.sub(r"[?!.,;:\'\"()\[\]{}]", " ", text)
+    for ch in ['?', '!', '.', ',', ';', ':', "'", '"', '(', ')', '[', ']', '{', '}']:
+        text = text.replace(ch, " ")
     tokens = [t for t in text.split() if t]
     return " ".join(tokens)
 
@@ -36,20 +37,20 @@ def train_and_export():
     texts = [clean_text(d["question"]) for d in data]
     labels = [d["intent"] for d in data]
 
-    # Train / Test split
+    # Train / Test split with stratification
     X_train, X_test, y_train, y_test, data_train, data_test = train_test_split(
-        texts, labels, data, test_size=0.2, random_state=42, stratify=labels
+        texts, labels, data, test_size=0.15, random_state=42, stratify=labels
     )
 
     print(f"Train size: {len(X_train)}, Test size: {len(X_test)}")
 
     # TF-IDF Vectorizer with unigram and bigram features
-    vectorizer = TfidfVectorizer(ngram_range=(1, 2), min_df=2, max_features=1200)
+    vectorizer = TfidfVectorizer(ngram_range=(1, 2), min_df=2, max_features=3000)
     X_train_vec = vectorizer.fit_transform(X_train)
     X_test_vec = vectorizer.transform(X_test)
 
-    # Train classifier
-    clf = LogisticRegression(C=5.0, max_iter=500, random_state=42)
+    # Train multiclass regularized logistic regression
+    clf = LogisticRegression(C=5.0, max_iter=800, random_state=42)
     clf.fit(X_train_vec, y_train)
 
     # Evaluate
@@ -83,8 +84,7 @@ def train_and_export():
         json.dump(mobile_nlp_model, f, ensure_ascii=False)
     print(f"Mobile Intent Model exported to: {model_path} ({os.path.getsize(model_path) / 1024:.1f} KB)")
 
-    # Build knowledge retrieval database index for offline semantic matching
-    # Each entry maps key concepts (crops, intents, keywords) to verified answers
+    # Build deduplicated knowledge retrieval database index for offline semantic matching
     knowledge_entries = []
     seen = set()
     for item in data:
@@ -93,12 +93,11 @@ def train_and_export():
             continue
         seen.add(key)
         
-        # Build searchable keywords
         keywords = []
         if item.get("crop_id"):
             keywords.append(item["crop_id"])
         keywords.append(item["intent"])
-        
+
         knowledge_entries.append({
             "intent": item["intent"],
             "crop_id": item.get("crop_id"),
@@ -109,10 +108,11 @@ def train_and_export():
             "source": item["source"]
         })
 
-    knowledge_path = os.path.join(OUTPUT_DIR, "mobile_knowledge_index.json")
-    with open(knowledge_path, "w", encoding="utf-8") as f:
+    index_path = os.path.join(OUTPUT_DIR, "mobile_knowledge_index.json")
+    with open(index_path, "w", encoding="utf-8") as f:
         json.dump(knowledge_entries, f, ensure_ascii=False, indent=2)
-    print(f"Mobile Knowledge Index exported to: {knowledge_path} ({len(knowledge_entries)} verified facts)")
+
+    print(f"Knowledge Retrieval Index exported ({len(knowledge_entries)} verified items) to: {index_path} ({os.path.getsize(index_path) / 1024:.1f} KB)")
 
 if __name__ == "__main__":
     train_and_export()

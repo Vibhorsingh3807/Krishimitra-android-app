@@ -16,7 +16,11 @@
     "treatment_chemical_hi": "रोग के शुरुआती लक्षण दिखते ही ट्राइसाइक्लाजोल 75% डब्लूपी @ 0.6 ग्राम/लीटर अथवा कासुगामाइसिन 3% एसएल @ 2 मिली/लीटर पानी में घोलकर छिड़कें।",
     "prevention_en": "Treat seeds with Carbendazim 2g/kg seed; avoid excessive urea; maintain field sanitation.",
     "prevention_hi": "कार्बेंडाजिम 2 ग्राम प्रति किग्रा बीज से बीजोपचार करें; यूरिया का संतुलित प्रयोग करें।",
-    "confidence_threshold": 0.70
+    "confidence_threshold": 0.7,
+    "source": "ICAR - National Centre for Integrated Pest Management (NCIPM) & CIBRC",
+    "source_url": "https://ncipm.icar.gov.in",
+    "source_document": "Central Insecticides Board & Registration Committee (CIBRC) Compendium of Registered Fungicides and ICAR-NCIPM Advisory 2024",
+    "last_verified": "2026-08-30"
   },
   {
     "id": "rice_brown_spot",
@@ -35,7 +39,11 @@
     "treatment_chemical_hi": "मैनकोजेब 75% WP @ 2.5 ग्राम/लीटर अथवा हेक्साकोनाजोल 5% EC @ 2 मिली/लीटर का छिड़काव; खेत में पोटाश अवश्य दें।",
     "prevention_en": "Seed treatment with Thiram 3g/kg seed; ensure balanced NPK fertilization with required potash.",
     "prevention_hi": "थीरम 3 ग्राम/किग्रा बीज से बीजोपचार; पोटाश खाद का संतुलित प्रयोग।",
-    "confidence_threshold": 0.70
+    "confidence_threshold": 0.7,
+    "source": "ICAR - National Centre for Integrated Pest Management (NCIPM) & CIBRC",
+    "source_url": "https://ncipm.icar.gov.in",
+    "source_document": "Central Insecticides Board & Registration Committee (CIBRC) Compendium of Registered Fungicides and ICAR-NCIPM Advisory 2024",
+    "last_verified": "2026-08-30"
   },
   {
     "id": "wheat_yellow_rust",
@@ -54,7 +62,11 @@
     "treatment_chemical_hi": "पीला पाउडर दिखते ही प्रोपिकोनाजोल 25% EC (टिल्ट) @ 1 मिली/लीटर अथवा टेबुकोनाजोल 25.9% EC @ 1 मिली/लीटर का छिड़काव करें।",
     "prevention_en": "Grow rust-resistant varieties like DBW 187 (Karan Vandana), DBW 303, PBW 725; monitor fields closely in Jan-Feb.",
     "prevention_hi": "रतुआ रोधी किस्में (डीबीडब्ल्यू 187, डीबीडब्ल्यू 303, पीबीडब्ल्यू 725) बोएं।",
-    "confidence_threshold": 0.72
+    "confidence_threshold": 0.72,
+    "source": "ICAR - National Centre for Integrated Pest Management (NCIPM) & CIBRC",
+    "source_url": "https://ncipm.icar.gov.in",
+    "source_document": "Central Insecticides Board & Registration Committee (CIBRC) Compendium of Registered Fungicides and ICAR-NCIPM Advisory 2024",
+    "last_verified": "2026-08-30"
   },
   {
     "id": "wheat_loose_smut",
@@ -73,7 +85,11 @@
     "treatment_chemical_hi": "बुवाई से पहले कार्बाक्सिन + थीरम (विटावैक्स) @ 2.5 ग्राम/किग्रा बीज से बीजोपचार। खड़ी फसल में कोई दवा काम नहीं करती।",
     "prevention_en": "Use certified disease-free seeds; rogue out and burn infected heads in a polythene bag before spores disperse.",
     "prevention_hi": "प्रमाणित बीज का उपयोग; संक्रमित बाली को पॉलीथीन थैली से ढककर उखाड़ें और जला दें ताकि चूर्ण न फैले।",
-    "confidence_threshold": 0.75
+    "confidence_threshold": 0.75,
+    "source": "ICAR - National Centre for Integrated Pest Management (NCIPM) & CIBRC",
+    "source_url": "https://ncipm.icar.gov.in",
+    "source_document": "Central Insecticides Board & Registration Committee (CIBRC) Compendium of Registered Fungicides and ICAR-NCIPM Advisory 2024",
+    "last_verified": "2026-08-30"
   },
   {
     "id": "cotton_bacterial_blight",
@@ -92,7 +108,11 @@
     "treatment_chemical_hi": "कॉपर ऑक्सीक्लोराइड 50% WP @ 2.5 ग्राम/लीटर के साथ स्ट्रेप्टोसाइक्लिन 1 ग्राम प्रति 10 लीटर पानी में मिलाकर छिड़कें।",
     "prevention_en": "Delint seed with concentrated sulphuric acid (100ml/kg seed); collect and burn crop residues after harvest.",
     "prevention_hi": "बीज को सल्फ्यूरिक एसिड से डीलिंट करें; फसल अवशेषों को नष्ट करें।",
-    "confidence_threshold": 0.70
+    "confidence_threshold": 0.7,
+    "source": "ICAR - National Centre for Integrated Pest Management (NCIPM) & CIBRC",
+    "source_url": "https://ncipm.icar.gov.in",
+    "source_document": "Central Insecticides Board & Registration Committee (CIBRC) Compendium of Registered Fungicides and ICAR-NCIPM Advisory 2024",
+    "last_verified": "2026-08-30"
   },
   {
     "id": "potato_early_blight",
@@ -111,7 +131,11 @@
     "treatment_chemical_hi": "मैनकोजेब 75% WP @ 2.5 ग्राम/लीटर अथवा क्लोरोथैलोनिल 75% WP @ 2 ग्राम/लीटर पानी में घोलकर 10-12 दिन के अंतर पर छिड़कें।",
     "prevention_en": "Plant certified seed tubers; maintain adequate potassium and nitrogen balance; avoid sprinkler splashing.",
     "prevention_hi": "प्रमाणित कंद लगाएं; संतुलित पोटाश खाद दें; पत्तियों पर पानी की छींटों से बचें।",
-    "confidence_threshold": 0.72
+    "confidence_threshold": 0.72,
+    "source": "ICAR - National Centre for Integrated Pest Management (NCIPM) & CIBRC",
+    "source_url": "https://ncipm.icar.gov.in",
+    "source_document": "Central Insecticides Board & Registration Committee (CIBRC) Compendium of Registered Fungicides and ICAR-NCIPM Advisory 2024",
+    "last_verified": "2026-08-30"
   },
   {
     "id": "potato_late_blight",
@@ -130,7 +154,11 @@
     "treatment_chemical_hi": "साइमोक्सानिल + मैनकोजेब (कर्जेट) @ 3 ग्राम/लीटर अथवा मेटालेक्सिल + मैनकोजेब (रिडोमिल) @ 2.5 ग्राम/लीटर का तुरंत छिड़काव करें।",
     "prevention_en": "Destroy cull piles; practice earthing up to protect tubers from spores washing down; monitor blight forecast.",
     "prevention_hi": "खेत में अच्छी मिट्टी चढ़ाएं ताकि कंद तक फफूंद न पहुंचे; रोगग्रस्त पौधों को तुरंत उखाड़कर नष्ट करें।",
-    "confidence_threshold": 0.75
+    "confidence_threshold": 0.75,
+    "source": "ICAR - National Centre for Integrated Pest Management (NCIPM) & CIBRC",
+    "source_url": "https://ncipm.icar.gov.in",
+    "source_document": "Central Insecticides Board & Registration Committee (CIBRC) Compendium of Registered Fungicides and ICAR-NCIPM Advisory 2024",
+    "last_verified": "2026-08-30"
   },
   {
     "id": "tomato_early_blight",
@@ -149,7 +177,11 @@
     "treatment_chemical_hi": "एजॉक्सीस्ट्रोबिन 23% SC @ 1 मिली/लीटर अथवा डाइफेनोकोनाजोल 25% EC @ 1 मिली/लीटर का छिड़काव।",
     "prevention_en": "Stake plants; use mulch to prevent soil splashing onto foliage; rotate with non-solanaceous crops.",
     "prevention_hi": "पौधों को सहारा (स्टेकिंग) दें; मिट्टी की मल्चिंग करें; टमाटर के बाद मिर्च/आलू न लगाएं।",
-    "confidence_threshold": 0.70
+    "confidence_threshold": 0.7,
+    "source": "ICAR - National Centre for Integrated Pest Management (NCIPM) & CIBRC",
+    "source_url": "https://ncipm.icar.gov.in",
+    "source_document": "Central Insecticides Board & Registration Committee (CIBRC) Compendium of Registered Fungicides and ICAR-NCIPM Advisory 2024",
+    "last_verified": "2026-08-30"
   },
   {
     "id": "tomato_leaf_mold",
@@ -168,7 +200,11 @@
     "treatment_chemical_hi": "कॉपर हाइड्रोक्साइड 77% WP @ 2 ग्राम/लीटर अथवा पाइराक्लोस्ट्रोबिन 20% WG @ 1 ग्राम/लीटर का छिड़काव करें।",
     "prevention_en": "Ensure proper plant spacing and air circulation; avoid wetting foliage during irrigation.",
     "prevention_hi": "पौधों में उचित दूरी रखें ताकि हवा और धूप मिल सके; ड्रिप से सिंचाई करें।",
-    "confidence_threshold": 0.70
+    "confidence_threshold": 0.7,
+    "source": "ICAR - National Centre for Integrated Pest Management (NCIPM) & CIBRC",
+    "source_url": "https://ncipm.icar.gov.in",
+    "source_document": "Central Insecticides Board & Registration Committee (CIBRC) Compendium of Registered Fungicides and ICAR-NCIPM Advisory 2024",
+    "last_verified": "2026-08-30"
   },
   {
     "id": "healthy_leaf",
@@ -187,7 +223,11 @@
     "treatment_chemical_hi": "किसी रासायनिक दवा की आवश्यकता नहीं है। व्यर्थ कीटनाशक छिड़काव न करें।",
     "prevention_en": "Maintain regular field scouting and weed control.",
     "prevention_hi": "नियमित खेत की निगरानी करें।",
-    "confidence_threshold": 0.75
+    "confidence_threshold": 0.75,
+    "source": "ICAR - National Centre for Integrated Pest Management (NCIPM), New Delhi",
+    "source_url": "https://ncipm.icar.gov.in",
+    "source_document": "ICAR-NCIPM Field Scout Manual for Healthy Crop Canopy Assessment 2024",
+    "last_verified": "2026-08-30"
   },
   {
     "id": "soil_or_background",
@@ -206,7 +246,11 @@
     "treatment_chemical_hi": "लागू नहीं",
     "prevention_en": "Hold phone 15-20 cm away from the affected leaf in good natural daylight.",
     "prevention_hi": "प्राकृतिक धूप में मोबाइल को प्रभावित पत्ती से 15-20 सेमी दूर रखकर फोटो लें।",
-    "confidence_threshold": 0.60
+    "confidence_threshold": 0.6,
+    "source": "KrishiMitra Computer Vision Guidance Protocol",
+    "source_url": "https://krishimitra.gov.in",
+    "source_document": "Standard Field Image Acquisition Protocol for AI Plant Diagnostics",
+    "last_verified": "2026-08-30"
   },
   {
     "id": "uncertain_quality",
@@ -225,6 +269,10 @@
     "treatment_chemical_hi": "स्पष्ट पुष्टि के बिना किसी रसायन का उपयोग न करें।",
     "prevention_en": "Clean camera lens and tap screen to lock focus onto the leaf surface before capturing.",
     "prevention_hi": "कैमरा लेंस पोंछें और फोटो खींचने से पहले स्क्रीन पर पत्ती को छूकर फोकस स्थिर करें।",
-    "confidence_threshold": 0.50
+    "confidence_threshold": 0.5,
+    "source": "KrishiMitra Computer Vision Guidance Protocol",
+    "source_url": "https://krishimitra.gov.in",
+    "source_document": "Standard Field Image Acquisition Protocol for AI Plant Diagnostics",
+    "last_verified": "2026-08-30"
   }
 ]

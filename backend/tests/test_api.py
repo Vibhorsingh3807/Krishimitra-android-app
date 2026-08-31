@@ -84,3 +84,59 @@ def test_sync():
     assert data["crops_count"] >= 10
     assert data["schemes_count"] >= 5
     assert data["diseases_count"] >= 10
+
+def test_get_market_prices():
+    response = client.get("/api/v1/market-prices")
+    assert response.status_code == 200
+    data = response.json()
+    assert len(data) >= 10
+    assert any(p["commodity"] for p in data)
+
+def test_get_latest_market_price():
+    response = client.get("/api/v1/market-prices/latest?crop_id=rice")
+    assert response.status_code == 200
+    data = response.json()
+    assert data["crop_id"] == "rice"
+    assert data["modal_price"] > 0
+
+def test_compare_markets():
+    response = client.get("/api/v1/market-prices/compare?crop_id=cotton")
+    assert response.status_code == 200
+    data = response.json()
+    assert data["crop_id"] == "cotton"
+    assert data["best_market"] is not None
+    assert len(data["markets"]) >= 1
+
+def test_get_crop_varieties():
+    response = client.get("/api/v1/market-prices/varieties?crop_id=wheat")
+    assert response.status_code == 200
+    data = response.json()
+    assert len(data) >= 2
+    assert any("HD" in v["variety_name"] or "DBW" in v["variety_name"] for v in data)
+
+def test_ai_market_query_rice():
+    payload = {
+        "query": "What is the current market price of rice?",
+        "language": "en"
+    }
+    response = client.post("/api/v1/ai/query", json=payload)
+    assert response.status_code == 200
+    data = response.json()
+    assert data["detected_intent"] == "market_price_latest"
+    assert "₹" in data["answer"]
+    assert "quintal" in data["answer"].lower()
+
+def test_ai_contextual_query():
+    payload = {
+        "query": "What is the price of my crop in my district?",
+        "crop": "rice",
+        "district": "Palakkad",
+        "language": "en"
+    }
+    response = client.post("/api/v1/ai/query", json=payload)
+    assert response.status_code == 200
+    data = response.json()
+    assert data["detected_intent"] == "market_price_latest"
+    assert "Palakkad" in data["answer"]
+    assert "₹2,850" in data["answer"]
+

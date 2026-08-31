@@ -1,0 +1,887 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>ICAR-Central Potato Research Institute,Shimla</title>
+    <link href="https://fonts.googleapis.com/css?family=Open+Sans:400,600&amp;subset=latin-ext" rel="stylesheet">
+    <link href="/css/bootstrap.min.css" rel="stylesheet">
+    <link href="/css/camera.css" rel="stylesheet">
+    <link href="/css/prettyPhoto.css" rel="stylesheet">
+    <link href="/css/font-awesome.min.css" rel="stylesheet"> 
+       
+    <link href="/css/theme.css" rel="stylesheet" />   
+</head>
+<body id="Body">
+
+
+<link href="/Style/CSS_TopHeader.css" rel="stylesheet" />
+<script src='https://cdnjs.cloudflare.com/ajax/libs/jquery/3.2.1/jquery.min.js'></script>
+<script src="/js1/js.cookie.js"></script>
+<script src="/js1/color_format.js"></script>
+<script src="/js1/text-image-zoomin.js"></script>
+<link href="/css/bootstrap.min.css" rel="stylesheet" />
+<script type="text/javascript">
+    function Delete_Cookie(name) {
+        debugger;
+        if (getCookie(name))
+            document.cookie = name + "=" + ";expires=Thu, 01-Jan-2008 00:00:01 GMT";
+    }
+
+    function getCookie(name) {
+    debugger;
+    var nameEQ = name + "=";
+    var ca = document.cookie.split(';');
+    for (var i = 0; i < ca.length; i++) {
+        var c = ca[i];
+        while (c.charAt(0) == ' ') c = c.substring(1, c.length);
+        if (c.indexOf(nameEQ) == 0) return c.substring(nameEQ.length, c.length);
+    }
+    return null;
+}
+
+
+function setCookie(cname, cvalue, exdays) {
+   // debugger;
+    var d = new Date();
+    d.setTime(d.getTime() + (exdays * 24 * 60 * 60 * 1000));
+    var expires = "expires=" + d.toGMTString();
+    document.cookie = cname + "=" + cvalue + "; " + expires;
+}
+
+function zoomIn() {
+    var curSize = Math.round(parseFloat(getCookie("curFZ")) * 100) / 100;
+    if (parseFloat(curSize) < parseFloat("1.1")) {
+        var incSize = "0.05"
+        var newSize = Math.round(parseFloat(parseFloat(curSize) + parseFloat(incSize)) * 100) / 100;
+       // setCookie("curFZ", "1", -1);
+        setCookie("curFZ", newSize, 10);
+        setFont(newSize);
+        //setCokies(newSize);
+    }
+    else {
+        var newSize = curSize;
+        setFont(newSize);
+    }
+    return false;
+}
+
+function Default() {
+    setCookie("curFZ", "1", 10);
+    setFont("1");
+    return false;
+}
+
+function zoomOut() {
+    //alert(document.getElementById(event.target.id).value);
+    var curSize = Math.round(parseFloat(getCookie("curFZ")) * 100) / 100;
+    if (parseFloat(curSize) > parseFloat("0.9")) {
+        var decSize = "0.05"
+        var newSize = Math.round(parseFloat(parseFloat(curSize) - parseFloat(decSize)) * 100) / 100;
+        //setCookie("curFZ", "1", -1);
+        setCookie("curFZ", newSize, 10);
+        setFont(newSize);
+       // setCokies(newSize);
+    }
+    else {
+        var newSize = curSize;
+        setFont(newSize);
+
+    }
+    return false;
+}
+
+function setFont(Size) {
+    //alert(Size)
+    //debugger;
+    var isOpera = !!window.opera || navigator.userAgent.indexOf(' OPR/') >= 0;
+    var isFirefox = typeof InstallTrigger !== 'undefined';
+    var isSafari = Object.prototype.toString.call(window.HTMLElement).indexOf('Constructor') > 0;
+    var isChrome = !!window.chrome && !isOpera;
+    var isIE = false || !!document.documentMode;
+    var Page = document.getElementById('Body');
+
+
+    if (isChrome) {
+        //Page.style.webkitTransform = "scale(" + Size + "," + Size + ")"
+        //Page.style.webkitTransformOrigin = "0 0";
+        Page.style.zoom = Size*100 + '%';
+        //default_zoom = zoom1;
+    }
+    else if (isFirefox) {
+        //Page.style.MozTransform = "scale(" + Size + "," + Size + ")"
+        //Page.style.MozTransformOrigin = "0 0";
+        Page.style.MozTransform = "scale("+Size+")";
+        Page.style.MozTransformOrigin = "center top";
+        Page.style.position = "relative";
+    }
+    else if (isIE) {
+        //debugger;
+        if (Page.style.zoom != null) {
+            //var zoom = parseFloat(parseFloat(100) * parseFloat(Size));
+            //if (zoom != 100) {
+            //    zoom = zoom - 5;
+            //}
+            //zoom = zoom + '%';
+            window.parent.document.body.style.zoom = Size;
+            //Page.style.zoom = zoom;
+        }
+        else {
+            Page.style.filter = 'progid:DXImageTransform.Microsoft.Matrix(M11=1, M12=0, M21=0, M22=' + Size + ', sizingMethod=\'auto expand\',zoom=' + Size + ')';
+            // Page.style.filter = 'progid:DXImageTransform.Microsoft.Matrix(Dx=20, Dy=20)';
+            Page.style.msTransform = "scale(" + Size + "," + Size + ")"
+            Page.style.msTransformOrigin = "0 0";
+
+            Page.style.transform = "scale(" + Size + "," + Size + ")"
+            Page.style.transformOrigin = "0 0";
+
+        }
+
+    }
+    else if (isOpera) {
+        //Page.style.OTransform = "scale(" + Size + "," + Size + ")"
+        //Page.style.OTransformOrigin = "0 0";
+        Page.style.zoom = Size * 100 + '%';
+        //default_zoom = Size;
+    }
+    else {
+        Page.style.transform = "scale(" + Size + "," + Size + ")"
+        Page.style.transformOrigin = "0 0";
+    }
+
+}
+
+
+    function setCokies(cokVal) {
+        Delete_Cookie("fontSize");
+        setCookie("fontSize", cokVal);
+
+
+        var chkCook = getCookie('fontSize');
+
+        if (navigator.appName == 'Microsoft Internet Explorer') {
+            window.location = 'accessoption.aspx'
+        }
+        else {
+            window.location.reload();
+        }
+    }
+</script>
+
+
+
+
+
+
+
+<div class="wrapper common-wrapper">
+    <div class="row common tobbar_main">
+        <div class="container common-container">
+                <div class="skipto"><a title="Skip to main content" href="#content"><img src="/img/ico-skip.png" width="24" alt="Skip to Main Content" height="24" />&nbsp;&nbsp;Skip to Main Content</a></div>
+                <div class="common-right clearfix">
+
+                    <ul id="header-nav">
+                        <li>
+                            <a title="themes" id="toggleSocial" href="javascript:void(0);"><img src="/img/color_scheems.png" width="24" height="24" /></a>
+                            <ul>
+                                <li class="theme"><a href="" id="Default" class="theme" title="Default"><img src="/img/d1.jpg" /></a></li>
+                                <li class="theme"><a href="" id="Yellow" class="theme" title="Yellow"><img src="/img/d2.jpg" /></a></li>
+                                <li class="theme"><a href="" id="Pink" class="theme" title="Pink"><img src="/img/d3.jpg" /></a></li>
+                            </ul>
+
+                        </li>
+
+                        <li class="ico-accessibility">
+                            <a title="Site zooming" id="toggleAccessibility" href="javascript:void(0);"></a>
+                            <ul>
+                                <li> <a href="" title="Increase font size" name="zoom_decrease" onclick="return zoomOut();">A<sup>-</sup></a> </li>
+                                <li> <a href="" title="Reset font size" name="zoom_default" onclick="return Default();">A<sup>&nbsp;</sup></a> </li>
+                                <li> <a href="" name="zoom_increase" title="Increase Size" onclick="return zoomIn();">A<sup>+</sup></a> </li>
+
+                            </ul>
+                        </li>
+                        <li class="ico-social">
+                            <a title="Social Media's" id="toggleSocial" href="javascript:void(0);"></a>
+                            <ul>
+                                <li><a href="https://www.facebook.com/socialmediacpri/" target="_blank"><img src="/img/ico-facebook.png" alt="Facebook, External Link that opens in a new window"></a></li>
+                                <li><a href="https://www.twitter.com/cpri_icar//" target="_blank"><img src="/img/ico-twitter.png" alt="Twitter, External Link that opens in a new window"></a></li>
+                                <li><a href="https://www.youtube.com/c/DirectorCPRI" target="_blank"><img src="/img/ico-youtube.png" alt="youtube, External Link that opens in a new window"></a></li>
+				<li><a href="https://www.instagram.com/icarcpri/" target="_blank"><img src="/img/ico-Instagram.png" alt="Instagram, External Link that opens in a new window"></a></li>
+                            </ul>
+
+                        </li>
+                        <li data-toggle="modal" data-target="#myModalheader" class="ico-site-search">
+                            <a href="#" title="Site Search"></a>
+                        </li>
+                        <li class="ico-sitemap"><a title="Sitemap" href="/Content/sitemap/?lngid=1"></a></li>
+                        
+                        <li class="hindi"><a title="Link to Hindi version" href="/Home/Index/?lngid=2">हिंदी रूपांतर</a></li>
+                    </ul>
+                </div>
+        </div>
+    </div>
+
+
+    <!-- Modal -->
+    <div class="modal fade" id="myModalheader" role="dialog">
+        <div class="modal-dialog">
+
+            <!-- Modal content-->
+            <div class="modal-content">
+                <div class="modal-header">
+                    <button type="button" class="close" data-dismiss="modal">&times;</button>
+                    <h4 class="modal-title">Search</h4>
+                </div>
+                <div class="modal-body">
+                    <div class="input-group">
+                        <input type="text" class="form-control" id="searchtext" onkeyup="validate()" placeholder="Enter keywords">
+                        <span class="input-group-addon span-pointer btn-success" onclick="search()" id="searchdata">Search</span>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    <script type="text/javascript" src="/js1/jquery.js"></script>
+    <script>
+            function validate() {
+                var iChars = "!`#$%^&*()+=-[]\\\';,./{}|\":<>?~_";
+                var data = document.getElementById("searchtext").value;
+                for (var i = 0; i < data.length; i++) {
+                    if (iChars.indexOf(data.charAt(i)) != -1) {
+                        alert("Your string has special characters. \nThese are not allowed.");
+                        document.getElementById("searchtext").value = "";
+                        return false;
+                    }
+                }
+                if (data.length > 30) {
+                    alert("Your string has more then 30 keywords. \nThese are not allowed.");
+                    document.getElementById("searchtext").value = "";
+                    return false;
+                }
+            }
+    </script>
+
+    <script type="text/javascript">
+    $(function () {
+            var _location = document.location.toString();
+            var applicationNameIndex = _location.indexOf('/', _location.indexOf('://') + 3);
+            var applicationName = _location.substring(0, applicationNameIndex) + '/';
+            var webFolderIndex = _location.indexOf('/', _location.indexOf(applicationName) + applicationName.length);
+            var webFolderFullPath = _location.substring(0, webFolderIndex);
+            var newURL = window.location.protocol
+            var action = webFolderFullPath + "/Content/urldetail/";
+            $("#searchdata").click(function () {
+                if ($('#searchtext').val().length < 1) {
+                    alert("Please enter any key for search .");
+                    return false;
+                }
+                else {
+                    var searchtext = $('#searchtext').val();
+                    $.ajax({
+                        url: action,
+                        data: '{ searchtext:"' + searchtext + '"}',
+                        type: "Post",
+                        contentType: "application/json;charset=utf-8",
+                        dataType: "json",
+                        success: function (json) {
+                            if (json.isRedirect) {
+                                window.location.href = json.redirectUrl;
+                            }
+                            else {
+                                var url = RootUrl + RecUnitList.ControllerName + "/" + RecUnitList.ActionName + "/" + RecUnitList.ID;
+                                window.location.href = url;
+                            }
+                        },
+                        failure: function (response) {
+                          //  alert(response.responseText);
+                        },
+                        error: function (response) {
+                           // alert(response.responseText);
+                        }
+                    });
+                }
+            });
+
+        });
+    </script>
+  
+</div>
+
+<script type="text/javascript">
+    'use strict';
+    $(document).ready(function () {
+            $('.font-switcher').click(function (event) {
+                var size = $(event.target).data('size');
+                if (size) {
+                    if (size == "s") {
+                        debugger; var varsize= small();Cookies.set('Message', varsize, 30)//create and set the cookie value
+                    }
+                    if (size == "m") {
+                        debugger; var varsize = mid();  Cookies.set('Message', varsize, 30)//create and set the cookie value
+                    }
+                    if (size == "l") {
+                        var varsize = large(); Cookies.set('Message', varsize, 30)//create and set the cookie value
+                    }
+                }
+            });
+    });
+</script>
+
+<script type="text/javascript">
+    $(function () {
+        var pageURL = $(location).attr("href");
+        var _location = document.location.toString();      
+            var applicationNameIndex = _location.indexOf('/', _location.indexOf('://') + 3);
+            var applicationName = _location.substring(0, applicationNameIndex) + '/';
+            var webFolderIndex = _location.indexOf('/', _location.indexOf(applicationName) + applicationName.length);
+            var webFolderFullPath = _location.substring(0, webFolderIndex);
+            var newURL = window.location.protocol
+            var action = pageURL + "/Content/urldetail/";
+            $("#searchdata").click(function () {
+                if ($('#searchtext').val().length < 1) {
+                    alert("Please enter any key for search .");
+                    return false;
+                }
+                else {
+                    var searchtext = $('#searchtext').val();
+                    $.ajax({
+                        url: action,
+                        data: '{ searchtext:"' + searchtext + '"}',
+                        type: "Post",
+                        contentType: "application/json;charset=utf-8",
+                        dataType: "json",
+                        success: function (json) {
+                            if (json.isRedirect) {
+                                window.location.href = json.redirectUrl;
+                            }
+                            else {
+                                var url = RootUrl + RecUnitList.ControllerName + "/" + RecUnitList.ActionName + "/" + RecUnitList.ID;
+                                window.location.href = url;
+                            }
+                        },
+                        failure: function (response) {
+                          //  alert(response.responseText);
+                        },
+                        error: function (response) {
+                           // alert(response.responseText);
+                        }
+                    });
+                }
+            });
+
+        });
+</script>
+<script>
+    $('document').ready(function () {
+        $('.theme').click(function (event) {
+            var theme = $(this).find('a.theme').attr('id');
+            if (theme) {
+
+                if (theme.trim() == "blue") {
+                    Default();
+
+                }
+
+                if (theme.trim() == "Yellow") {
+                    Yellow();
+                }
+
+                if (theme.trim() == "Default") {
+                    Cookies.set('Message_thime', null, 30)//create and set the cookie value
+                    pink();
+                }
+                Cookies.set('Message_thime', theme, 30)//create and set the cookie value
+
+            }
+        });
+    });
+</script>
+<script type="text/javascript">
+    'use strict';
+    $(document).ready(function () {
+        var CookieValue = Cookies.get('Message_thime')// get cookies value and use for mantian
+        debugger
+        if (Cookies.get('Message_thime') != null)
+        {
+
+            if (CookieValue.trim() == "Pink") {
+                pink();
+            }
+
+
+            if (CookieValue.trim() == "Yellow") {
+                Yellow();
+            }
+            //if (theme.trim() == "Default") {
+            //    Cookies.set('Message_thime', null, 30)//create and set the cookie value
+            //    $('body').css({ "background-color": "" });
+            //    $('li a,h1,h2,h3,h4,h5,a,span,p,.panel-heading,b').css({ "color": "" });
+            //    $('.navbar-default .navbar-nav > li > a').css({ "color": "" });
+            //    $('ul.sidebar-links').css({ "background-color": "" });
+            //    $('ul.sidebar-links li a').css({ "background-color": "" });
+            //}
+        }
+        if (Cookies.get('Message') != null)
+        {
+            var CookieValue = Cookies.get('Message')            
+            $('html').addClass('font-size--' + CookieValue);
+            $('.font-switcher__size--' + CookieValue).addClass('active');
+        }
+    });
+</script>
+<script>
+    $("#searchtext").on("keydown", function (e) {
+        if (e.keyCode === 13) {
+            if ($('#searchtext').val().length < 1)
+            {
+                alert("Please enter any key for search .");
+                return false;
+            }
+            else
+            {
+                var pageURL = $(location).attr("href");
+                var _location = document.location.toString();
+                var applicationNameIndex = _location.indexOf('/', _location.indexOf('://') + 3);
+                var applicationName = _location.substring(0, applicationNameIndex) + '/';
+                var webFolderIndex = _location.indexOf('/', _location.indexOf(applicationName) + applicationName.length);
+                var webFolderFullPath = _location.substring(0, webFolderIndex);
+                var newURL = window.location.protocol
+                var action = pageURL + "/Content/urldetail/";
+                var searchtext = $('#searchtext').val();
+                $.ajax({
+                    url: action,
+                    data: '{ searchtext:"' + searchtext + '"}',
+                    type: "Post",
+                    contentType: "application/json;charset=utf-8",
+                    dataType: "json",
+                    success: function (json) {
+                        if (json.isRedirect) {
+                            window.location.href = json.redirectUrl;
+                        }
+                        else {
+                            var url = RootUrl + RecUnitList.ControllerName + "/" + RecUnitList.ActionName + "/" + RecUnitList.ID;
+                            window.location.href = url;
+                        }
+                    },
+                    failure: function (response) {
+                      //  alert(response.responseText);
+                    },
+                    error: function (response) {
+                      //  alert(response.responseText);
+                    }
+                });
+            }
+        }
+    });
+</script>
+    <div class="main-nav">
+<nav class="navbar navbar-default header_mainpanel">
+    <div class="container" style="padding: 0px!important;">
+        <button type="button" class="navbar-toggle collapsed" data-toggle="collapse" data-target="#bs-navbar-collapse">
+            <span class="sr-only">Toggle Navigation</span>
+            <i class="fa fa-bars"></i>
+        </button>
+        <div class="row header_panelrow">
+            <div class="container">
+                <div class="col-sm-1 header_logo text-center"><a href="/home/Index/"><img src="/img/main_logo.png" height="120" /></a></div>
+                <div class="col-sm-10">
+                                            <a href="/home/Index/">
+                                                <h1>&#2349;&#2366;&#2325;&#2371;&#2309;&#2344;&#2369;&#2346; - &#2325;&#2375;&#2344;&#2381;&#2342;&#2381;&#2352;&#2368;&#2351; &#2310;&#2354;&#2370; &#2309;&#2344;&#2369;&#2360;&#2306;&#2343;&#2366;&#2344; &#2360;&#2306;&#2360;&#2381;&#2341;&#2366;&#2344;, &#2358;&#2367;&#2350;&#2354;&#2366; </h1>
+                                                <h1>
+                                                    ICAR-Central Potato Research Institute,Shimla
+                                                </h1>
+                                            </a>
+
+                </div>
+                <div class="col-sm-1 header_logo text-right" style="padding-top: 18px;"><a href="/home/Index/"><img src="/img/himachal_logo.png" height="85" /></a></div>
+            </div>
+        </div>
+
+
+
+<nav id="main_menu">
+    <div class="menu_wrap">
+        <ul class="nav sf-menu">
+            <li class="active"><a href="/home/index"><span class="glyphicon glyphicon-home"></span> <span class="sr-only">(current)</span></a></li>
+            
+
+
+<li class='dropdown'><a title='About Us'  href='https://icarcpri.res.in//content/Index/?qlid=1&Ls_is=1&lngid=1'class='dropdown-toggle' role='button'  aria-expanded='false'>About Us <span class='caret'></span></a><ul class='dropdown-menu'><li><a title='About ICAR-CPRI'  href='https://icarcpri.res.in//content/Index/?qlid=2061&Ls_is=7115&lngid=1'>About ICAR-CPRI</a></li><li><a title='Director's'  href='https://icarcpri.res.in//content/Index/?qlid=6505&Ls_is=7117&lngid=1' class='dropdown-toggle' role='button' aria-expanded='false'>Director's<span class='glyphicon'></span></a><ul><li><a title='Present Director'  href='https://icarcpri.res.in//content/Index/?qlid=2074&Ls_is=7118&lngid=1'>Present Director</a></li><li><a title='Past Directors'  href='https://icarcpri.res.in//content/Index/?qlid=4059&Ls_is=7119&lngid=1'>Past Directors</a></li></ul></li><li><a title='Staff'  href='https://icarcpri.res.in//content/Index/?qlid=5104&Ls_is=5144&lngid=1' class='dropdown-toggle' role='button' aria-expanded='false'>Staff<span class='glyphicon'></span></a><ul><li><a title='Headquarter'  href='https://icarcpri.res.in//content/Index/?qlid=6500&Ls_is=7081&lngid=1'>Headquarter</a></li><li><a title='Stations'  href='https://icarcpri.res.in//content/Index/?qlid=6501&Ls_is=7080&lngid=1'>Stations</a></li></ul></li><li><a title='Awards and Honours'  href='https://icarcpri.res.in///WriteReadData/LINKS/Awards and Honours_update final 24-6-21b0412d06-a230-49c6-aca3-b28761b5df94.pdf' target='_blank'>Awards and Honours<img alt ='image-PDF' height = '14' src ='https://icarcpri.res.in//Images/pdf.gif'>(140 ) KB </a></ul></li><li class='dropdown'><a title='Research'  href='https://icarcpri.res.in//content/Index/?qlid=2&Ls_is=2&lngid=1'class='dropdown-toggle' role='button'  aria-expanded='false'>Research <span class='caret'></span></a><ul class='dropdown-menu'><li><a title='Potato Varieties'  href='https://icarcpri.res.in//content/Index/?qlid=4074&Ls_is=4125&lngid=1' class='dropdown-toggle' role='button' aria-expanded='false'>Potato Varieties<span class='glyphicon'></span></a><ul><li><a title='Potato Varieties (1949-2020)'  href='https://icarcpri.res.in///WriteReadData/LINKS/Potato varieties 1949-2020_8-8-21ddc5f209-e4e6-4918-89cb-b88d7e1a0b25.pdf' target='_blank'>Potato Varieties (1949-2020)<img alt ='image-PDF' height = '14' src ='https://icarcpri.res.in//Images/pdf.gif'>(5604 ) KB </a><li><a title='Potato Genetic Stocks'  href='https://icarcpri.res.in///WriteReadData/LINKS/Elite potato genetic stocks37248584-8f2f-4dc8-b46b-c720a11bd3f5.pdf' target='_blank'>Potato Genetic Stocks<img alt ='image-PDF' height = '14' src ='https://icarcpri.res.in//Images/pdf.gif'>(130 ) KB </a></ul></li><li><a title='Patents'  href='https://icarcpri.res.in//content/Index/?qlid=4073&Ls_is=4126&lngid=1'>Patents</a></li><li><a title='Commercial Technologies'  href='https://icarcpri.res.in//content/Index/?qlid=4071&Ls_is=4128&lngid=1'>Commercial Technologies</a></li><li><a title='Projects'  href='https://icarcpri.res.in//content/Index/?qlid=4072&Ls_is=4127&lngid=1' class='dropdown-toggle' role='button' aria-expanded='false'>Projects<span class='glyphicon'></span></a><ul><li><a title='Institute Projects (2025-30)'  href='https://icarcpri.res.in///WriteReadData/LINKS/Projects 2025 to 20300db6ee85-de8b-4746-a2a1-462b6ffe714a.pdf' target='_blank'>Institute Projects (2025-30)<img alt ='image-PDF' height = '14' src ='https://icarcpri.res.in//Images/pdf.gif'>(144 ) KB </a></ul></li></ul></li><li class='dropdown'><a title='Divisions & Stations'  href='https://icarcpri.res.in//content/Index/?qlid=17&Ls_is=17&lngid=1'class='dropdown-toggle' role='button'  aria-expanded='false'>Divisions & Stations <span class='caret'></span></a><ul class='dropdown-menu'><li><a title='Division of CPB & PHT'  href='https://icarcpri.res.in//content/Index/?qlid=3045&Ls_is=3057&lngid=1'>Division of CPB & PHT</a></li><li><a title='Division of Plant Protection'  href='https://icarcpri.res.in//content/Index/?qlid=3046&Ls_is=3056&lngid=1'>Division of Plant Protection</a></li><li><a title='Division of Crop Improvement and Seed Technology'  href='https://icarcpri.res.in//content/Index/?qlid=3047&Ls_is=3055&lngid=1'>Division of Crop Improvement and Seed Technology</a></li><li><a title='Division of Crop Production'  href='https://icarcpri.res.in//content/Index/?qlid=3042&Ls_is=3060&lngid=1'>Division of Crop Production</a></li><li><a title='Division of Social Sciences'  href='https://icarcpri.res.in//content/Index/?qlid=3043&Ls_is=3059&lngid=1'>Division of Social Sciences</a></li><li><a title='ICAR-CPRI RS Modipuram '  href='https://icarcpri.res.in//content/Index/?qlid=3035&Ls_is=9038&lngid=1'>ICAR-CPRI RS Modipuram </a></li><li><a title='ICAR-CPRI RS Jalandhar'  href='https://icarcpri.res.in//content/Index/?qlid=3036&Ls_is=9041&lngid=1'>ICAR-CPRI RS Jalandhar</a></li><li><a title='ICAR-CPRI RS Gwalior'  href='https://icarcpri.res.in//content/Index/?qlid=3038&Ls_is=9039&lngid=1'>ICAR-CPRI RS Gwalior</a></li><li><a title='ICAR-CPRI RS Patna'  href='https://icarcpri.res.in//content/Index/?qlid=3037&Ls_is=9040&lngid=1'>ICAR-CPRI RS Patna</a></li><li><a title='ICAR-CPRI RS Ooty'  href='https://icarcpri.res.in//content/Index/?qlid=3040&Ls_is=9042&lngid=1'>ICAR-CPRI RS Ooty</a></li><li><a title='ICAR-CPRI RS Shillong'  href='https://icarcpri.res.in//content/Index/?qlid=3041&Ls_is=9043&lngid=1'>ICAR-CPRI RS Shillong</a></li><li><a title='ICAR-CPRI Kufri-Fagu Unit'  href='https://icarcpri.res.in//content/Index/?qlid=3039&Ls_is=6730&lngid=1'>ICAR-CPRI Kufri-Fagu Unit</a></li></ul></li><li class='dropdown'><a title='Publication'  href='https://icarcpri.res.in//content/Index/?qlid=6&Ls_is=6&lngid=1'class='dropdown-toggle' role='button'  aria-expanded='false'>Publication <span class='caret'></span></a><ul class='dropdown-menu'><li><a title='E-Publications'  href='https://icarcpri.res.in//content/Index/?qlid=6509&Ls_is=7129&lngid=1' class='dropdown-toggle' role='button' aria-expanded='false'>E-Publications<span class='glyphicon'></span></a><ul><li><a title='Catalogue of Indian Potato Varieties for Export.'  href='https://icarcpri.res.in///WriteReadData/LINKS/Catalogue_Indian Potato varieties_Export_Final0ae8830e-118a-4190-878b-bac854a6dc31.pdf' target='_blank'>Catalogue of Indian Potato Varieties for Export.<img alt ='image-PDF' height = '14' src ='https://icarcpri.res.in//Images/pdf.gif'>(2652 ) KB </a><li><a title='Manual of Potato tuber moth, Phthorimaea operculella (Zeller)'  href='https://icarcpri.res.in///WriteReadData/LINKS/Final PTM MS-Coverpages (1)1578551b-9540-4813-b772-587afd393ffa.pdf' target='_blank'>Manual of Potato tuber moth, Phthorimaea operculella (Zeller)<img alt ='image-PDF' height = '14' src ='https://icarcpri.res.in//Images/pdf.gif'>(936 ) KB </a><li><a title='Organic Potato Production Technology for North Indian PlainsOrganic Potato Production Technology for North Indian Plains. (Ext. Bull. No. 51)'  href='https://icarcpri.res.in///WriteReadData/LINKS/Organic Potato Production Technology for North Indian Plains17ab54e4-95e9-45d6-aad1-424c03c3b548.pdf' target='_blank'>Organic Potato Production Technology for North Indian PlainsOrganic Potato Production Technology for North Indian Plains. (Ext. Bull. No. 51)<img alt ='image-PDF' height = '14' src ='https://icarcpri.res.in//Images/pdf.gif'>(4270 ) KB </a><li><a title='Package of Practices for Organic Potato Cultivation in Hills Organic Potato Production Technology for North Indian PlainsOrganic Potato Production Technology for North Indian Plains. (Ext. Bull. No. 52)'  href='https://icarcpri.res.in///WriteReadData/LINKS/Package of Practices for Organic Potato Cultivation in Hills4326469e-3a57-4ea4-a742-730d3079c4f3.pdf' target='_blank'>Package of Practices for Organic Potato Cultivation in Hills Organic Potato Production Technology for North Indian PlainsOrganic Potato Production Technology for North Indian Plains. (Ext. Bull. No. 52)<img alt ='image-PDF' height = '14' src ='https://icarcpri.res.in//Images/pdf.gif'>(4096 ) KB </a><li><a title='Good Agricultural Practices (GAP) for Production of Potato Crop. (Technical Bulletin No. 108)'  href='https://icarcpri.res.in///WriteReadData/LINKS/GAP_Technical_Bulletin_108cf4149c3-240b-4452-9c1c-545d02c79e7f.pdf' target='_blank'>Good Agricultural Practices (GAP) for Production of Potato Crop. (Technical Bulletin No. 108)<img alt ='image-PDF' height = '14' src ='https://icarcpri.res.in//Images/pdf.gif'>(4742 ) KB </a><li><a title='Model Training Course on Disease and Pest Management in Potato'  href='https://icarcpri.res.in///WriteReadData/LINKS/Training_DiseasePestManagement26d933ee-6f0b-49ba-b5d5-f6bc5c58cd9ceb8e3ee7-af1e-497d-ba36-a5ca08fce89c.pdf' target='_blank'>Model Training Course on Disease and Pest Management in Potato<img alt ='image-PDF' height = '14' src ='https://icarcpri.res.in//Images/pdf.gif'>(1866 ) KB </a><li><a title='Recent Advances in Crop Improvement, Production and PHT in Potato Research'  href='https://icarcpri.res.in///WriteReadData/LINKS/Ebook_SummerSchool2017538bd103-402e-467b-91b1-444d76f7247d5b03524d-4662-469b-bc92-c1d7ba73660c.pdf' target='_blank'>Recent Advances in Crop Improvement, Production and PHT in Potato Research<img alt ='image-PDF' height = '14' src ='https://icarcpri.res.in//Images/pdf.gif'>(6766 ) KB </a><li><a title='Training Manual on “Protected Cultivation, Post-Harvest Technology, Value Addition and Supply Chain Management in Potato”.'  href='https://icarcpri.res.in///WriteReadData/LINKS/Training_MTC_Oct20192f3f605c-bc19-4fc1-b991-452c88436101.pdf' target='_blank'>Training Manual on “Protected Cultivation, Post-Harvest Technology, Value Addition and Supply Chain Management in Potato”.<img alt ='image-PDF' height = '14' src ='https://icarcpri.res.in//Images/pdf.gif'>(6322 ) KB </a><li><a title='Training Manual on “Advancement in Potato Production Technology and its Future Prospects”.'  href='https://icarcpri.res.in///WriteReadData/LINKS/ETrainingManual_Jan2020733c8ed4-709d-4c23-9491-e22583f004ba.pdf' target='_blank'>Training Manual on “Advancement in Potato Production Technology and its Future Prospects”.<img alt ='image-PDF' height = '14' src ='https://icarcpri.res.in//Images/pdf.gif'>(6600 ) KB </a><li><a  title='Compendium of Registered Varieties of Potato' target='_blank'  href='http://14.139.61.83/E-Book-reg-pot-var/index.htm'class='dropdown-toggle' role='button'  aria-expanded='false'>Compendium of Registered Varieties of Potato</a></li> <li><a  title='Protocols for Estimation of Potatoes' Health Promoting Compounds' target='_blank'  href='http://14.139.61.83/Protocols_HealthPromotingCompoundsPotato/Master_Page.htm'class='dropdown-toggle' role='button'  aria-expanded='false'>Protocols for Estimation of Potatoes' Health Promoting Compounds</a></li> <li><a title='Short Course Training Manual'  href='https://icarcpri.res.in///WriteReadData/LINKS/105aab197-4bf0-47e4-b300-bbb4c365a85f.pdf' target='_blank'>Short Course Training Manual<img alt ='image-PDF' height = '14' src ='https://icarcpri.res.in//Images/pdf.gif'>(3848 ) KB </a><li><a  title='Agro-Techniques for Production of quality potato seed.' target='_blank'  href='http://14.139.61.83/ebook_potatoseed/index.htm'class='dropdown-toggle' role='button'  aria-expanded='false'>Agro-Techniques for Production of quality potato seed.</a></li> <li><a  title='Summer school on advances in quality potato production and post harvest management' target='_blank'  href='http://14.139.61.83/E-Book-SummerSchool/index.htm'class='dropdown-toggle' role='button'  aria-expanded='false'>Summer school on advances in quality potato production and post harvest management</a></li> <li><a  title='Potato Pest' target='_blank'  href='http://14.139.61.83/ebook_potato_pest/index.htm'class='dropdown-toggle' role='button'  aria-expanded='false'>Potato Pest</a></li> <li><a  title='Potato Food & Nutrition' target='_blank'  href='http://14.139.61.83/ebook_potato_nutrition/index.htm'class='dropdown-toggle' role='button'  aria-expanded='false'>Potato Food & Nutrition</a></li> <li><a  title='Potato Storage' target='_blank'  href='http://14.139.61.83/ebook_storage/index.htm'class='dropdown-toggle' role='button'  aria-expanded='false'>Potato Storage</a></li> <li><a  title='Potato processing Scenarion in India' target='_blank'  href='http://14.139.61.83/ebook_potato_processing_secenarion/index.htm'class='dropdown-toggle' role='button'  aria-expanded='false'>Potato processing Scenarion in India</a></li> <li><a title='Extension Bulletin Number 17 (Package of practices for ware and seed potato production in Eastern Indo Gangetic plains)'  href='https://icarcpri.res.in///WriteReadData/LINKS/ExtBullNo17Engc8386f89-d6e6-424c-a76e-907ffe9fb7ed.pdf' target='_blank'>Extension Bulletin Number 17 (Package of practices for ware and seed potato production in Eastern Indo Gangetic plains)<img alt ='image-PDF' height = '14' src ='https://icarcpri.res.in//Images/pdf.gif'>(612 ) KB </a><li><a title='Potato production scenario in Punjab with special emphasis on seed Potato production '  href='https://icarcpri.res.in///WriteReadData/LINKS/Final Insight into the Seed potato production scenario in Punjaba95d5b3a-5697-46de-a205-ecb93767583a.pdf' target='_blank'>Potato production scenario in Punjab with special emphasis on seed Potato production <img alt ='image-PDF' height = '14' src ='https://icarcpri.res.in//Images/pdf.gif'>(1582 ) KB </a><li><a title='Plant Tissue Culture and Somatic  Hybridization in Potato'  href='https://icarcpri.res.in///WriteReadData/LINKS/Plant tissue culture and somatic hybridization in potato_8-7-21b3ec5f8c-ce18-47d6-99d4-800af9e4af0e.pdf' target='_blank'>Plant Tissue Culture and Somatic  Hybridization in Potato<img alt ='image-PDF' height = '14' src ='https://icarcpri.res.in//Images/pdf.gif'>(1812 ) KB </a><li><a title='Molecular Markers in Potato'  href='https://icarcpri.res.in///WriteReadData/LINKS/Molecular markers in potato_8-7-211f6a4202-7045-4ae8-94a7-73f8561f756c.pdf' target='_blank'>Molecular Markers in Potato<img alt ='image-PDF' height = '14' src ='https://icarcpri.res.in//Images/pdf.gif'>(1400 ) KB </a><li><a title='Genomics in Potato Improvement'  href='https://icarcpri.res.in///WriteReadData/LINKS/Genomics_8-7-211d9be3e6-0876-4cdd-aad8-7497a3e95081.pdf' target='_blank'>Genomics in Potato Improvement<img alt ='image-PDF' height = '14' src ='https://icarcpri.res.in//Images/pdf.gif'>(2322 ) KB </a><li><a title='Potato Transgenics'  href='https://icarcpri.res.in///WriteReadData/LINKS/Transgenics_8-7-218cecad47-41cc-4a0e-b32b-85444761a366.pdf' target='_blank'>Potato Transgenics<img alt ='image-PDF' height = '14' src ='https://icarcpri.res.in//Images/pdf.gif'>(1666 ) KB </a><li><a title='Impact of ICAR-CPRI Technologies on  Potato in India'  href='https://icarcpri.res.in///WriteReadData/LINKS/Impact CPRI tech on potato in India 8-7-21da1f3f68-ceb3-43ed-be21-ea4a7d2346fd.pdf' target='_blank'>Impact of ICAR-CPRI Technologies on  Potato in India<img alt ='image-PDF' height = '14' src ='https://icarcpri.res.in//Images/pdf.gif'>(458 ) KB </a><li><a title='Next-Generation Breeding in Potato'  href='https://icarcpri.res.in///WriteReadData/LINKS/Next Generation potato breeding_8-7-21fd29d0e9-3cac-41f4-8e9d-b4b87de818d2.pdf' target='_blank'>Next-Generation Breeding in Potato<img alt ='image-PDF' height = '14' src ='https://icarcpri.res.in//Images/pdf.gif'>(470 ) KB </a><li><a title='Indian Potato Varieties (1949-2020)'  href='https://icarcpri.res.in///WriteReadData/LINKS/Potato varieties 1949-2020_8-8-2144de2084-7d86-4d27-8687-d79416c15fd1.pdf' target='_blank'>Indian Potato Varieties (1949-2020)<img alt ='image-PDF' height = '14' src ='https://icarcpri.res.in//Images/pdf.gif'>(5604 ) KB </a><li><a title='Pathari kshetro mein bhojya evam beej aalu ki utpadan takniki  (Exten. Bull. No.23) '  href='https://icarcpri.res.in///WriteReadData/LINKS/ExtBullNo23e7a57be2-5d28-4906-8def-182b88c1aafd.pdf' target='_blank'>Pathari kshetro mein bhojya evam beej aalu ki utpadan takniki  (Exten. Bull. No.23) <img alt ='image-PDF' height = '14' src ='https://icarcpri.res.in//Images/pdf.gif'>(900 ) KB </a><li><a title='Package of practices for ware and seed potato production in Nilgiri Hills (Ext. Bull. No.18) '  href='https://icarcpri.res.in///WriteReadData/LINKS/ExtBullNo182a588b5f-54ed-4d51-b986-99bfd6067472.pdf' target='_blank'>Package of practices for ware and seed potato production in Nilgiri Hills (Ext. Bull. No.18) <img alt ='image-PDF' height = '14' src ='https://icarcpri.res.in//Images/pdf.gif'>(244 ) KB </a><li><a title=' Package of practices for ware and seed potato production in Eastern Indo Gangetic plains-Hindi (Ext. Bull. No.17)'  href='https://icarcpri.res.in///WriteReadData/LINKS/ExtBullNo171ca96bb9-020b-4208-a269-ac0874af8511.pdf' target='_blank'> Package of practices for ware and seed potato production in Eastern Indo Gangetic plains-Hindi (Ext. Bull. No.17)<img alt ='image-PDF' height = '14' src ='https://icarcpri.res.in//Images/pdf.gif'>(688 ) KB </a><li><a title='Package of practices for ware and seed potato production in Central Indo Gangetic Plains-Hindi (Ext. Bull. No. 16) '  href='https://icarcpri.res.in///WriteReadData/LINKS/ExtBullNo168c85bd96-3274-4ee4-ba7c-3106d7621ce9.pdf' target='_blank'>Package of practices for ware and seed potato production in Central Indo Gangetic Plains-Hindi (Ext. Bull. No. 16) <img alt ='image-PDF' height = '14' src ='https://icarcpri.res.in//Images/pdf.gif'>(652 ) KB </a><li><a title='Package of practices for ware and seed potato production in Central Indo Gangetic Plains (Ext. Bull. No.16)'  href='https://icarcpri.res.in///WriteReadData/LINKS/ExtBullNo16Engfb1e51db-0d72-4de3-9037-fb79447e301b.pdf' target='_blank'>Package of practices for ware and seed potato production in Central Indo Gangetic Plains (Ext. Bull. No.16)<img alt ='image-PDF' height = '14' src ='https://icarcpri.res.in//Images/pdf.gif'>(594 ) KB </a><li><a title='Package of practices for ware and seed potato production in North western Hills (Ext. Bull. No. 15)'  href='https://icarcpri.res.in///WriteReadData/LINKS/ExtBullNo152c658a98-6f7d-4683-9e8b-66a9d1714db0.pdf' target='_blank'>Package of practices for ware and seed potato production in North western Hills (Ext. Bull. No. 15)<img alt ='image-PDF' height = '14' src ='https://icarcpri.res.in//Images/pdf.gif'>(438 ) KB </a><li><a title='Package of practices for ware and seed potato production in Western Indo Gangetic Plains (Ext. Bull. No. 19) '  href='https://icarcpri.res.in///WriteReadData/LINKS/ExtBullNo190d2129be-50f2-4833-a6f8-98bc7efe4e0f.pdf' target='_blank'>Package of practices for ware and seed potato production in Western Indo Gangetic Plains (Ext. Bull. No. 19) <img alt ='image-PDF' height = '14' src ='https://icarcpri.res.in//Images/pdf.gif'>(534 ) KB </a><li><a title='A Manual on Potato Processing in India (Tech. Bull. No.48 Revised)'  href='https://icarcpri.res.in///WriteReadData/LINKS/Technical_Bulletin48bbe6a156-111f-43bb-a8bd-daa77a1c5c7d.pdf' target='_blank'>A Manual on Potato Processing in India (Tech. Bull. No.48 Revised)<img alt ='image-PDF' height = '14' src ='https://icarcpri.res.in//Images/pdf.gif'>(7022 ) KB </a><li><a title='Seed and Ware Potato Production Technology for Southern Hills (Tech. Bull. No.80)'  href='https://icarcpri.res.in///WriteReadData/LINKS/Technical_Bulletin80568d104a-c52a-4804-a219-5cafe2365797.pdf' target='_blank'>Seed and Ware Potato Production Technology for Southern Hills (Tech. Bull. No.80)<img alt ='image-PDF' height = '14' src ='https://icarcpri.res.in//Images/pdf.gif'>(1030 ) KB </a><li><a title='Modified Heap and Pit Storage for Table and Processing Potatoes (Tech. Bull. No.82)'  href='https://icarcpri.res.in///WriteReadData/LINKS/Technical_Bulletin825d268298-e9e1-4903-a79d-8e0aa18036e0.pdf' target='_blank'>Modified Heap and Pit Storage for Table and Processing Potatoes (Tech. Bull. No.82)<img alt ='image-PDF' height = '14' src ='https://icarcpri.res.in//Images/pdf.gif'>(714 ) KB </a><li><a title='Indian Potato Varieties and Their Salient Features (Techn. Bull. No.78 revised)'  href='https://icarcpri.res.in///WriteReadData/LINKS/Technical_Bulletin780a1b6a46-1ff8-4b8a-8c3e-9b19f99bdde1.pdf' target='_blank'>Indian Potato Varieties and Their Salient Features (Techn. Bull. No.78 revised)<img alt ='image-PDF' height = '14' src ='https://icarcpri.res.in//Images/pdf.gif'>(9044 ) KB </a><li><a title='Catalogue of Indigenous Potato  Varieties based on Morphological  Descriptors'  href='https://icarcpri.res.in///WriteReadData/LINKS/Indigenous potato varieties_Final pdf uploadf5ebc29b-8c98-4528-9065-116d3c9293c1.pdf' target='_blank'>Catalogue of Indigenous Potato  Varieties based on Morphological  Descriptors<img alt ='image-PDF' height = '14' src ='https://icarcpri.res.in//Images/pdf.gif'>(12482 ) KB </a></ul></li><li><a title='Research Papers'  href='https://icarcpri.res.in//content/Index/?qlid=6507&Ls_is=7125&lngid=1' class='dropdown-toggle' role='button' aria-expanded='false'>Research Papers<span class='glyphicon'></span></a><ul><li><a title='List of Research Papers (2014-15 to 19-20)'  href='https://icarcpri.res.in///WriteReadData/LINKS/researche013f008-1f13-4947-bcba-d893d83fadff.pdf' target='_blank'>List of Research Papers (2014-15 to 19-20)<img alt ='image-PDF' height = '14' src ='https://icarcpri.res.in//Images/pdf.gif'>(1458 ) KB </a></ul></li><li><a  title='Potato Journal' target='_blank'  href='http://epubs.icar.org.in/ejournal/index.php/PotatoJ/issue/archive'class='dropdown-toggle' role='button'  aria-expanded='false'>Potato Journal</a></li> <li><a title='Annual Reports'  href='https://icarcpri.res.in//content/Index/?qlid=4121&Ls_is=4233&lngid=1' class='dropdown-toggle' role='button' aria-expanded='false'>Annual Reports<span class='glyphicon'></span></a><ul><li><a title='Annual Report - 2022 (English)'  href='https://icarcpri.res.in///WriteReadData/LINKS/CPRI Annual Report-2022ebf32b3d-8446-47d5-86e4-9de59d63a959.pdf' target='_blank'>Annual Report - 2022 (English)<img alt ='image-PDF' height = '14' src ='https://icarcpri.res.in//Images/pdf.gif'>(21920 ) KB </a><li><a title='Annual Report - 2021 (English)'  href='https://icarcpri.res.in///WriteReadData/LINKS/Revised-Final annual report-2021 (1)e134bfe2-df23-4cf9-bd20-d252899d1a6e.pdf' target='_blank'>Annual Report - 2021 (English)<img alt ='image-PDF' height = '14' src ='https://icarcpri.res.in//Images/pdf.gif'>(28006 ) KB </a><li><a title='Annual Report - 2020 (Hindi)'  href='https://icarcpri.res.in///WriteReadData/LINKS/CPRI Annual Report -202035100f12-b09f-4654-8a1c-0834e03582d2.pdf' target='_blank'>Annual Report - 2020 (Hindi)<img alt ='image-PDF' height = '14' src ='https://icarcpri.res.in//Images/pdf.gif'>(22188 ) KB </a><li><a title='Annual Report - 2020'  href='https://icarcpri.res.in///WriteReadData/LINKS/Final CPRI Annual Report-2020_11e44298b-584d-4d5c-89ad-c37862d3f9eb.pdf' target='_blank'>Annual Report - 2020<img alt ='image-PDF' height = '14' src ='https://icarcpri.res.in//Images/pdf.gif'>(22462 ) KB </a><li><a title='Annual Report 2019'  href='https://icarcpri.res.in///WriteReadData/LINKS/SHIMLA Annual Report  Final Sept 24bfc03f47-8856-47cd-9037-ca41b2b62b8f.pdf' target='_blank'>Annual Report 2019<img alt ='image-PDF' height = '14' src ='https://icarcpri.res.in//Images/pdf.gif'>(7918 ) KB </a><li><a title='Annual Report 2018-2019'  href='https://icarcpri.res.in///WriteReadData/LINKS/AnnualReport_2018_19-compressedf65d210a-0507-4775-97a9-a801e69b3563.pdf' target='_blank'>Annual Report 2018-2019<img alt ='image-PDF' height = '14' src ='https://icarcpri.res.in//Images/pdf.gif'>(18050 ) KB </a><li><a title='Annual Report 2017-2018'  href='https://icarcpri.res.in///WriteReadData/LINKS/AnnualReport_2017_18975b46d6-fc12-4cda-94bc-507a21084799.pdf' target='_blank'>Annual Report 2017-2018<img alt ='image-PDF' height = '14' src ='https://icarcpri.res.in//Images/pdf.gif'>(23438 ) KB </a><li><a title='Annual Report 2016-2017'  href='https://icarcpri.res.in///WriteReadData/LINKS/Annual_Report_2016_1728d38215-608c-4ffd-a69f-25a4ea9ad126.pdf' target='_blank'>Annual Report 2016-2017<img alt ='image-PDF' height = '14' src ='https://icarcpri.res.in//Images/pdf.gif'>(16374 ) KB </a><li><a title='Annual Report 2015-2016'  href='https://icarcpri.res.in///WriteReadData/LINKS/Annual_Report _ 2015_16e1c6b92e-d512-4663-99ee-323eb4e8f7a8.pdf' target='_blank'>Annual Report 2015-2016<img alt ='image-PDF' height = '14' src ='https://icarcpri.res.in//Images/pdf.gif'>(11670 ) KB </a><li><a title='Annual Report 2014-2015'  href='https://icarcpri.res.in///WriteReadData/LINKS/CPRI_Annual_Report_2015a7ee0168-6320-46e3-8948-4bd4e475138a.pdf' target='_blank'>Annual Report 2014-2015<img alt ='image-PDF' height = '14' src ='https://icarcpri.res.in//Images/pdf.gif'>(9920 ) KB </a><li><a title='Annual Report 2013-2014'  href='https://icarcpri.res.in///WriteReadData/LINKS/Annual_Report_2013-148f8e29a2-4476-477e-bef6-7c434d35becb.pdf' target='_blank'>Annual Report 2013-2014<img alt ='image-PDF' height = '14' src ='https://icarcpri.res.in//Images/pdf.gif'>(16906 ) KB </a><li><a title='Annual Report 2012-2013'  href='https://icarcpri.res.in///WriteReadData/LINKS/Annual_Report_2012-133a4cc37f-7f69-45ec-baf7-7ffbf9a39895.pdf' target='_blank'>Annual Report 2012-2013<img alt ='image-PDF' height = '14' src ='https://icarcpri.res.in//Images/pdf.gif'>(8250 ) KB </a><li><a title='Annual Report 2011-2012'  href='https://icarcpri.res.in///WriteReadData/LINKS/Annual_Report_2011-122420133c-bafd-4b29-8a4a-70f8a54a4b0e.pdf' target='_blank'>Annual Report 2011-2012<img alt ='image-PDF' height = '14' src ='https://icarcpri.res.in//Images/pdf.gif'>(6302 ) KB </a><li><a title='Annual Report  2010-2011'  href='https://icarcpri.res.in///WriteReadData/LINKS/CPRI- Annual Report 2010-11ed78391b-b57d-4a44-87e2-60c807d702a9.pdf' target='_blank'>Annual Report  2010-2011<img alt ='image-PDF' height = '14' src ='https://icarcpri.res.in//Images/pdf.gif'>(21310 ) KB </a><li><a title='Annual Report 2009-2010'  href='https://icarcpri.res.in///WriteReadData/LINKS/Annual Report 2009-10df1fb353-9169-47bd-96ba-fc8ec431e381.pdf' target='_blank'>Annual Report 2009-2010<img alt ='image-PDF' height = '14' src ='https://icarcpri.res.in//Images/pdf.gif'>(7092 ) KB </a><li><a title='Annual Report 2008-2009'  href='https://icarcpri.res.in///WriteReadData/LINKS/CPRI- Annual Report 2008-09f3288880-f982-4076-938d-33738899400b.pdf' target='_blank'>Annual Report 2008-2009<img alt ='image-PDF' height = '14' src ='https://icarcpri.res.in//Images/pdf.gif'>(22846 ) KB </a><li><a title='Annual Report 2007-2008'  href='https://icarcpri.res.in///WriteReadData/LINKS/CPRI- Annual Report 2007-081521bc0f-e021-445d-a3dd-3668c8652490.pdf' target='_blank'>Annual Report 2007-2008<img alt ='image-PDF' height = '14' src ='https://icarcpri.res.in//Images/pdf.gif'>(17846 ) KB </a></ul></li><li><a title='CPRI Technologies certified by ICAR'  href='https://icarcpri.res.in//content/Index/?qlid=7796&Ls_is=9023&lngid=1' class='dropdown-toggle' role='button' aria-expanded='false'>CPRI Technologies certified by ICAR<span class='glyphicon'></span></a><ul><li><a title='Gluten-free potato-millet cookies'  href='https://icarcpri.res.in///WriteReadData/LINKS/Potato_millet_cookies_certificate_15_July_20240944d431-4501-4de8-a026-d5dd37df6e47.pdf' target='_blank'>Gluten-free potato-millet cookies<img alt ='image-PDF' height = '14' src ='https://icarcpri.res.in//Images/pdf.gif'>(222 ) KB </a><li><a title='Dipstick for estimation of glucose in potato tubers'  href='https://icarcpri.res.in///WriteReadData/LINKS/Dipstick_glucose_estimationf5734296-1b35-4dfa-9fc1-736b058142ee.pdf' target='_blank'>Dipstick for estimation of glucose in potato tubers<img alt ='image-PDF' height = '14' src ='https://icarcpri.res.in//Images/pdf.gif'>(402 ) KB </a><li><a title='Gluten-free potato-fruit butter cookies'  href='https://icarcpri.res.in///WriteReadData/LINKS/Technology certificates 2023-679fa0e84-3943-4a87-ab31-efbffcb4e8a4.pdf' target='_blank'>Gluten-free potato-fruit butter cookies<img alt ='image-PDF' height = '14' src ='https://icarcpri.res.in//Images/pdf.gif'>(534 ) KB </a><li><a title='Gluten-free potato-kodo cookies'  href='https://icarcpri.res.in///WriteReadData/LINKS/Technology certificates 2023-5d290dd72-de85-4f8e-befc-9852d4c7c8d4.pdf' target='_blank'>Gluten-free potato-kodo cookies<img alt ='image-PDF' height = '14' src ='https://icarcpri.res.in//Images/pdf.gif'>(524 ) KB </a><li><a title='Gluten-free potato porridge and semolina'  href='https://icarcpri.res.in///WriteReadData/LINKS/Technology certificates 2023-42511ad44-4f59-479e-813a-dacd278f1b97.pdf' target='_blank'>Gluten-free potato porridge and semolina<img alt ='image-PDF' height = '14' src ='https://icarcpri.res.in//Images/pdf.gif'>(530 ) KB </a><li><a title='VEGGAST- A technology for growing vegetable on rooftops'  href='https://icarcpri.res.in///WriteReadData/LINKS/Technology certificates 2023-3644ae6b3-a690-42da-bd22-657412d96e6c.pdf' target='_blank'>VEGGAST- A technology for growing vegetable on rooftops<img alt ='image-PDF' height = '14' src ='https://icarcpri.res.in//Images/pdf.gif'>(536 ) KB </a><li><a title='Mini Tuber Counting Machine'  href='https://icarcpri.res.in///WriteReadData/LINKS/Technology certificates 2023-2ff0f0eb3-aba9-49d5-a0fc-758ab74eef48.pdf' target='_blank'>Mini Tuber Counting Machine<img alt ='image-PDF' height = '14' src ='https://icarcpri.res.in//Images/pdf.gif'>(522 ) KB </a><li><a title='Mini Tuber Grading Machine'  href='https://icarcpri.res.in///WriteReadData/LINKS/Technology certificates 2023_removede2a70d33-2723-4c44-a1f9-1523733d05ec.pdf' target='_blank'>Mini Tuber Grading Machine<img alt ='image-PDF' height = '14' src ='https://icarcpri.res.in//Images/pdf.gif'>(516 ) KB </a></ul></li><li><a title='Vision'  href='https://icarcpri.res.in//content/Index/?qlid=4057&Ls_is=7109&lngid=1'>Vision</a></li></ul></li><li class='dropdown'><a title='Web Resources'  href='https://icarcpri.res.in//content/Index/?qlid=14&Ls_is=14&lngid=1'class='dropdown-toggle' role='button'  aria-expanded='false'>Web Resources <span class='caret'></span></a><ul class='dropdown-menu'><li><a  title='Pensioner's Portal ' target='_blank'  href='http://14.139.61.83/Website3/Homepage.aspx'class='dropdown-toggle' role='button'  aria-expanded='false'>Pensioner's Portal </a></li> <li><a  title='IndoBlightCAst' target='_blank'  href='http://14.139.61.83/ibc/default.aspx'class='dropdown-toggle' role='button'  aria-expanded='false'>IndoBlightCAst</a></li> <li><a title='Nutrient Recommendation'  href='https://icarcpri.res.in//content/Index/?qlid=6510&Ls_is=7150&lngid=1' class='dropdown-toggle' role='button' aria-expanded='false'>Nutrient Recommendation<span class='glyphicon'></span></a><ul><li><a  title='Nutrient Recommendation Tool for Potato in Madhya Pradesh (NRTP-MP)' target='_blank'  href='http://14.139.61.83/NutrientMP/homepage.aspx'class='dropdown-toggle' role='button'  aria-expanded='false'>Nutrient Recommendation Tool for Potato in Madhya Pradesh (NRTP-MP)</a></li> </ul></li></ul></li><li class='dropdown'><a title='RTI'  href='https://icarcpri.res.in//content/Index/?qlid=3&Ls_is=3&lngid=1'class='dropdown-toggle' role='button'  aria-expanded='false'>RTI <span class='caret'></span></a><ul class='dropdown-menu'><li><a title='RTI Officers'  href='https://icarcpri.res.in//content/Index/?qlid=4075&Ls_is=4138&lngid=1'>RTI Officers</a></li><li><a title=' RTI Act  2005'  href='https://icarcpri.res.in//content/Index/?qlid=2059&Ls_is=5411&lngid=1' class='dropdown-toggle' role='button' aria-expanded='false'> RTI Act  2005<span class='glyphicon'></span></a><ul><li><a title='Sec.4(1)(b)(ii): The powers and duties of officers and employees'  href='https://icarcpri.res.in//content/Index/?qlid=2067&Ls_is=5414&lngid=1' class='dropdown-toggle' role='button' aria-expanded='false'>Sec.4(1)(b)(ii): The powers and duties of officers and employees<span class='glyphicon'></span></a><ul><li><a title='Schemes and development Programmes'  href='https://icarcpri.res.in//content/Index/?qlid=5259&Ls_is=5561&lngid=1'>Schemes and development Programmes</a></li><li><a title='Powers and duties of officers and employees'  href='https://icarcpri.res.in//content/Index/?qlid=4172&Ls_is=5559&lngid=1'>Powers and duties of officers and employees</a></li></ul></li><li><a title='Sec.4(1)(b)(iv): The norms set for discharge of functions'  href='https://icarcpri.res.in//content/Index/?qlid=4191&Ls_is=5416&lngid=1'>Sec.4(1)(b)(iv): The norms set for discharge of functions</a></li><li><a title='Sec.4(1)(b)(vi): The categories of documents held or under control'  href='https://icarcpri.res.in//content/Index/?qlid=4193&Ls_is=5418&lngid=1'>Sec.4(1)(b)(vi): The categories of documents held or under control</a></li><li><a title='Sec.4(1)(b)(viii): A Statement of the boards, councils, committees and other bodies consisting of two or more persons constituted as its part or for the purpose of its advice, and as to whether meetings of those boards, councils, committees and other bodies are open to the public, or the minutes of such meetings are accessible for public'  href='https://icarcpri.res.in//content/Index/?qlid=4195&Ls_is=5420&lngid=1'>Sec.4(1)(b)(viii): A Statement of the boards, councils, committees and other bodies consisting of two or more persons constituted as its part or for the purpose of its advice, and as to whether meetings of those boards, councils, committees and other bodies are open to the public, or the minutes of such meetings are accessible for public</a></li><li><a title='Sec.4(1)(b)(ix): A Directory of Officers and employees'  href='https://icarcpri.res.in//content/Index/?qlid=4197&Ls_is=5421&lngid=1'>Sec.4(1)(b)(ix): A Directory of Officers and employees</a></li><li><a title='Sec.4(1)(b)(xii): The manner of execution of subsidy programmes, including amounts allocated, details and beneficiaries'  href='https://icarcpri.res.in//content/Index/?qlid=4201&Ls_is=5424&lngid=1'>Sec.4(1)(b)(xii): The manner of execution of subsidy programmes, including amounts allocated, details and beneficiaries</a></li><li><a title='Form of Disclosure'  href='https://icarcpri.res.in//content/Index/?qlid=4209&Ls_is=5432&lngid=1'>Form of Disclosure</a></li><li><a title='Sec.4(1)(b)(xvii): Such other information'  href='https://icarcpri.res.in//content/Index/?qlid=4206&Ls_is=5429&lngid=1' class='dropdown-toggle' role='button' aria-expanded='false'>Sec.4(1)(b)(xvii): Such other information<span class='glyphicon'></span></a><ul><li><a title='Details of all contracts '  href='https://icarcpri.res.in//content/Index/?qlid=5263&Ls_is=5571&lngid=1'>Details of all contracts </a></li></ul></li><li><a title='Sec.4(1)(b)(xiii): Recipients of concessions, permits or authorization granted'  href='https://icarcpri.res.in//content/Index/?qlid=4202&Ls_is=5425&lngid=1'>Sec.4(1)(b)(xiii): Recipients of concessions, permits or authorization granted</a></li><li><a title='Grievance redressal mechanisms'  href='https://icarcpri.res.in//content/Index/?qlid=4222&Ls_is=7275&lngid=1'>Grievance redressal mechanisms</a></li><li><a title='Sec.4(1)(b)(iii): The procedure followed in the decision making process, including channels of supervision and accountability'  href='https://icarcpri.res.in//content/Index/?qlid=4190&Ls_is=5415&lngid=1'>Sec.4(1)(b)(iii): The procedure followed in the decision making process, including channels of supervision and accountability</a></li><li><a title='Sec.4(1)(b)(v): The rules, regulations, instructions, manuals and records used by employees for discharging functions'  href='https://icarcpri.res.in//content/Index/?qlid=4192&Ls_is=5417&lngid=1'>Sec.4(1)(b)(v): The rules, regulations, instructions, manuals and records used by employees for discharging functions</a></li><li><a title='Sec.4(1)(b)(xv): Particulars of facilities available to citizens for obtaining information including the working hours of a library or reading room, if maintained for public use'  href='https://icarcpri.res.in//content/Index/?qlid=4204&Ls_is=5427&lngid=1'>Sec.4(1)(b)(xv): Particulars of facilities available to citizens for obtaining information including the working hours of a library or reading room, if maintained for public use</a></li><li><a title='Sec.4(1)(b)(vii): The particulars of arrangement that exists for consultation with, or representation by, the members of the pubic in relation to the formulation of policy or implementation thereof'  href='https://icarcpri.res.in//content/Index/?qlid=4194&Ls_is=5419&lngid=1'>Sec.4(1)(b)(vii): The particulars of arrangement that exists for consultation with, or representation by, the members of the pubic in relation to the formulation of policy or implementation thereof</a></li><li><a title='Sec.4(1)(b)(x): The monthly remuneration of Officers and employees and system of compensation'  href='https://icarcpri.res.in//content/Index/?qlid=4198&Ls_is=5422&lngid=1'>Sec.4(1)(b)(x): The monthly remuneration of Officers and employees and system of compensation</a></li><li><a title='Sec.4(1)(b)(xiv): Details in respect of the information, available or held, reduced in an electronic form'  href='https://icarcpri.res.in//content/Index/?qlid=4203&Ls_is=5426&lngid=1'>Sec.4(1)(b)(xiv): Details in respect of the information, available or held, reduced in an electronic form</a></li><li><a title='Sec.4(1)(b)(xvi): Names, designations and other particulars of the Public Information Officers'  href='https://icarcpri.res.in//content/Index/?qlid=4205&Ls_is=5428&lngid=1'>Sec.4(1)(b)(xvi): Names, designations and other particulars of the Public Information Officers</a></li><li><a title='Additional Category of Information to be disclosed under guidelines –SuoMotu disclosure of more items under Section 4'  href='https://icarcpri.res.in//content/Index/?qlid=4208&Ls_is=5431&lngid=1'>Additional Category of Information to be disclosed under guidelines –SuoMotu disclosure of more items under Section 4</a></li><li><a title='RTI Replies'  href='https://icarcpri.res.in//content/Index/?qlid=4210&Ls_is=5433&lngid=1'>RTI Replies</a></li><li><a title='Programmes to advance understanding of RTI (Section 26)'  href='https://icarcpri.res.in//content/Index/?qlid=5260&Ls_is=5563&lngid=1'>Programmes to advance understanding of RTI (Section 26)</a></li><li><a title='Details of fees payable for seeking information under RTI Act-2005'  href='https://icarcpri.res.in//content/Index/?qlid=2060&Ls_is=5412&lngid=1'>Details of fees payable for seeking information under RTI Act-2005</a></li><li><a title='Sec.4 (1)(b)(i): The particulars of organisation, functions and duties'  href='https://icarcpri.res.in//content/Index/?qlid=2062&Ls_is=5413&lngid=1' class='dropdown-toggle' role='button' aria-expanded='false'>Sec.4 (1)(b)(i): The particulars of organisation, functions and duties<span class='glyphicon'></span></a><ul><li><a title='About Us'  href='https://icarcpri.res.in//content/Index/?qlid=1&Ls_is=5548&lngid=1'>About Us</a></li><li><a title='Head of the organisation'  href='https://icarcpri.res.in//content/Index/?qlid=2063&Ls_is=5549&lngid=1' class='dropdown-toggle' role='button' aria-expanded='false'>Head of the organisation<span class='glyphicon'></span></a><ul><li><a title='Present Director'  href='https://icarcpri.res.in//content/Index/?qlid=2074&Ls_is=5569&lngid=1'>Present Director</a></li></ul></li><li><a title='Functions and duties'  href='https://icarcpri.res.in//content/Index/?qlid=2064&Ls_is=5435&lngid=1'>Functions and duties</a></li><li><a title='Organisation Chart'  href='https://icarcpri.res.in//content/Index/?qlid=2065&Ls_is=5441&lngid=1'>Organisation Chart</a></li><li><a title='Functional Chart'  href='https://icarcpri.res.in//content/Index/?qlid=2066&Ls_is=5442&lngid=1'>Functional Chart</a></li><li><a title='Genesis'  href='https://icarcpri.res.in//content/Index/?qlid=2068&Ls_is=5550&lngid=1' class='dropdown-toggle' role='button' aria-expanded='false'>Genesis<span class='glyphicon'></span></a><ul><li><a title='Origin'  href='https://icarcpri.res.in//content/Index/?qlid=4049&Ls_is=5551&lngid=1'>Origin</a></li></ul></li><li><a title='Institute Committees'  href='https://icarcpri.res.in//content/Index/?qlid=5&Ls_is=5438&lngid=1' class='dropdown-toggle' role='button' aria-expanded='false'>Institute Committees<span class='glyphicon'></span></a><ul><li><a title='Newsletter Committee'  href='https://icarcpri.res.in//content/Index/?qlid=5147&Ls_is=5457&lngid=1'>Newsletter Committee</a></li><li><a title='Human Resource Development Committee'  href='https://icarcpri.res.in//content/Index/?qlid=5150&Ls_is=5453&lngid=1'>Human Resource Development Committee</a></li><li><a title='Publication Committee'  href='https://icarcpri.res.in//content/Index/?qlid=5151&Ls_is=5454&lngid=1'>Publication Committee</a></li><li><a title='Institute Deputation Committee'  href='https://icarcpri.res.in//content/Index/?qlid=5143&Ls_is=5456&lngid=1'>Institute Deputation Committee</a></li><li><a title='PG Committee'  href='https://icarcpri.res.in//content/Index/?qlid=5145&Ls_is=5458&lngid=1'>PG Committee</a></li><li><a title='Swachhta Committee'  href='https://icarcpri.res.in//content/Index/?qlid=4117&Ls_is=5444&lngid=1'>Swachhta Committee</a></li><li><a title='Staff Welfare Association Committee'  href='https://icarcpri.res.in//content/Index/?qlid=4107&Ls_is=5449&lngid=1'>Staff Welfare Association Committee</a></li><li><a title='Scientists Meet Committee'  href='https://icarcpri.res.in//content/Index/?qlid=5148&Ls_is=5455&lngid=1'>Scientists Meet Committee</a></li><li><a title='Institute Management Committee'  href='https://icarcpri.res.in//content/Index/?qlid=4102&Ls_is=5466&lngid=1'>Institute Management Committee</a></li><li><a title='Institutional Bio Safety Committee'  href='https://icarcpri.res.in//content/Index/?qlid=4113&Ls_is=5465&lngid=1'>Institutional Bio Safety Committee</a></li><li><a title='Consultancy Processing Cell Honararium Distribution Committee'  href='https://icarcpri.res.in//content/Index/?qlid=4108&Ls_is=5464&lngid=1'>Consultancy Processing Cell Honararium Distribution Committee</a></li><li><a title='Wrappers/Bottles Disposal Committee'  href='https://icarcpri.res.in//content/Index/?qlid=4115&Ls_is=5445&lngid=1'>Wrappers/Bottles Disposal Committee</a></li><li><a title='Institute Transfer Committee'  href='https://icarcpri.res.in//content/Index/?qlid=4112&Ls_is=5446&lngid=1'>Institute Transfer Committee</a></li><li><a title='Grievance Redressal Committee'  href='https://icarcpri.res.in//content/Index/?qlid=4105&Ls_is=5461&lngid=1'>Grievance Redressal Committee</a></li><li><a title='Institute Canteen Committee and Guest House Maintenance Committee'  href='https://icarcpri.res.in//content/Index/?qlid=4109&Ls_is=5447&lngid=1'>Institute Canteen Committee and Guest House Maintenance Committee</a></li><li><a title='Honorarium Committee'  href='https://icarcpri.res.in//content/Index/?qlid=4110&Ls_is=5448&lngid=1'>Honorarium Committee</a></li><li><a title='Managing Committee of ICAR Staff Welfare Fund Scheme'  href='https://icarcpri.res.in//content/Index/?qlid=4111&Ls_is=5459&lngid=1'>Managing Committee of ICAR Staff Welfare Fund Scheme</a></li><li><a title='Sports Committee'  href='https://icarcpri.res.in//content/Index/?qlid=5152&Ls_is=5452&lngid=1'>Sports Committee</a></li><li><a title='Institute Variety Release Committee '  href='https://icarcpri.res.in//content/Index/?qlid=5154&Ls_is=5450&lngid=1'>Institute Variety Release Committee </a></li><li><a title='Prevention of Sexual Harassment  at workplace Committee'  href='https://icarcpri.res.in//content/Index/?qlid=4114&Ls_is=5460&lngid=1'>Prevention of Sexual Harassment  at workplace Committee</a></li><li><a title='Works Committee'  href='https://icarcpri.res.in//content/Index/?qlid=5153&Ls_is=5451&lngid=1'>Works Committee</a></li><li><a title='Cultural Committee'  href='https://icarcpri.res.in//content/Index/?qlid=4116&Ls_is=5463&lngid=1'>Cultural Committee</a></li><li><a title='Institute Committee on Welfare of SC/ST Staff'  href='https://icarcpri.res.in//content/Index/?qlid=4118&Ls_is=5462&lngid=1'>Institute Committee on Welfare of SC/ST Staff</a></li><li><a title='Purchase Advisory Committee'  href='https://icarcpri.res.in//content/Index/?qlid=4119&Ls_is=5443&lngid=1'>Purchase Advisory Committee</a></li></ul></li><li><a title='Mandate & Objective'  href='https://icarcpri.res.in//content/Index/?qlid=117&Ls_is=5439&lngid=1'>Mandate & Objective</a></li></ul></li><li><a title='Miscellaneous – RTI Act 4 (1) (c), (d), 4 (3), 4(4)'  href='https://icarcpri.res.in//content/Index/?qlid=4207&Ls_is=5430&lngid=1'>Miscellaneous – RTI Act 4 (1) (c), (d), 4 (3), 4(4)</a></li><li><a title='Sec.4(1)(b)(xi): Budget allocated to each agency including all plans, proposed expenditures and reports on disbursements made etc.'  href='https://icarcpri.res.in//content/Index/?qlid=4199&Ls_is=5423&lngid=1'>Sec.4(1)(b)(xi): Budget allocated to each agency including all plans, proposed expenditures and reports on disbursements made etc.</a></li><li><a title='About ICAR-CPRI'  href='https://icarcpri.res.in//content/Index/?qlid=2061&Ls_is=5545&lngid=1'>About ICAR-CPRI</a></li></ul></li></ul></li><li class='dropdown'><a title='Employee Corner'  href='https://icarcpri.res.in//content/Index/?qlid=8894&Ls_is=10315&lngid=1'class='dropdown-toggle' role='button'  aria-expanded='false'>Employee Corner <span class='caret'></span></a><ul class='dropdown-menu'><li><a  title='ICAR Webmail' target='_blank'  href='https://mail.gov.in/'class='dropdown-toggle' role='button'  aria-expanded='false'>ICAR Webmail</a></li> <li><a  title='ICAR e-Office' target='_blank'  href='https://parichay.nic.in/'class='dropdown-toggle' role='button'  aria-expanded='false'>ICAR e-Office</a></li> <li><a  title='ICAR Samarth Potal' target='_blank'  href='https://icar.samarth.ac.in/index.php/site/login'class='dropdown-toggle' role='button'  aria-expanded='false'>ICAR Samarth Potal</a></li> <li><a  title='Pensioner's Portal ' target='_blank'  href='http://14.139.61.83/Website3/Homepage.aspx'class='dropdown-toggle' role='button'  aria-expanded='false'>Pensioner's Portal </a></li> </ul></li><li class='dropdown'><a title='Vacancies'  href='https://icarcpri.res.in//content/Index/?qlid=8896&Ls_is=10348&lngid=1'class='dropdown-toggle' role='button'  aria-expanded='false'>Vacancies <span class='caret'></span></a><ul class='dropdown-menu'><li><a title='Vacancy'  href='https://icarcpri.res.in//content/Index/?qlid=139&Ls_is=10349&lngid=1' class='dropdown-toggle' role='button' aria-expanded='false'>Vacancy<span class='glyphicon'></span></a><ul><li><a title='Walk-In-Interview for the 1 post of Young Professional-I on 16th September, 2026 at ICAR-CPRI RS Jalandhar.'  href='https://icarcpri.res.in///WriteReadData/LINKS/Adobe Scan 24 Aug 2026a2c957fc-d85f-465a-b23e-c70b4bc9ea5d.pdf' target='_blank'>Walk-In-Interview for the 1 post of Young Professional-I on 16th September, 2026 at ICAR-CPRI RS Jalandhar.<img alt ='New-Link' height = '14' src ='https://icarcpri.res.in//Images/newgif.gif'><img alt ='image-PDF' height = '14' src ='https://icarcpri.res.in//Images/pdf.gif'>(1756) KB</a><li><a title='Walk-In-Interview for the 2 post of Young Professional-I on 3rd September, 2026 at ICAR-CPRI RS Modipuram.'  href='https://icarcpri.res.in///WriteReadData/LINKS/Documents related to recruitment of YP1 at CPRIRS _260819_134219-2-7df4e476a-230f-45d0-b389-1b730c8205fb.pdf' target='_blank'>Walk-In-Interview for the 2 post of Young Professional-I on 3rd September, 2026 at ICAR-CPRI RS Modipuram.<img alt ='image-PDF' height = '14' src ='https://icarcpri.res.in//Images/pdf.gif'>(2250 ) KB </a><li><a title='Walk-In-Interview for the 1 post of Young Professional-I on 12th August, 2026 at ICAR-CPRI RS Jalandhar.'  href='https://icarcpri.res.in///WriteReadData/LINKS/Adobe Scan 22 Jul 2026_removed6415cc9f-4729-414d-9d56-6453b3908136.pdf' target='_blank'>Walk-In-Interview for the 1 post of Young Professional-I on 12th August, 2026 at ICAR-CPRI RS Jalandhar.<img alt ='image-PDF' height = '14' src ='https://icarcpri.res.in//Images/pdf.gif'>(1602 ) KB </a><li><a title='Walk-In-Interview for the 1 post of Young Professional-I & 1 post of Young Professional-II on 3rd August, 2026 at ICAR-CPRI Shimla.'  href='https://icarcpri.res.in///WriteReadData/LINKS/Advertisement for the 01 post of YP8441310a-6308-40ce-bb98-f5d2c8bb81f3.pdf' target='_blank'>Walk-In-Interview for the 1 post of Young Professional-I & 1 post of Young Professional-II on 3rd August, 2026 at ICAR-CPRI Shimla.<img alt ='image-PDF' height = '14' src ='https://icarcpri.res.in//Images/pdf.gif'>(18856 ) KB </a><li><a title='Walk-In-Interview for the 1 post of Young Professional-II on 2nd June, 2026 at ICAR-CPRI Shimla.'  href='https://icarcpri.res.in///WriteReadData/LINKS/1778480907aefcaee6-2c8d-4bfb-885a-28c832dcf2bc.pdf' target='_blank'>Walk-In-Interview for the 1 post of Young Professional-II on 2nd June, 2026 at ICAR-CPRI Shimla.<img alt ='image-PDF' height = '14' src ='https://icarcpri.res.in//Images/pdf.gif'>(1150 ) KB </a><li><a title='Walk-In-Interview for the 1 post of Young Professional-I on 27th March, 2026 at ICAR-CPRI Shimla.'  href='https://icarcpri.res.in///WriteReadData/LINKS/1773116574fba5a363-e642-429b-9b73-87de48e61f82.pdf' target='_blank'>Walk-In-Interview for the 1 post of Young Professional-I on 27th March, 2026 at ICAR-CPRI Shimla.<img alt ='image-PDF' height = '14' src ='https://icarcpri.res.in//Images/pdf.gif'>(17142 ) KB </a><li><a title='Walk-In-Interview for the 1 post of Research Associate & 3 Post of Young Professional-II on 25th March, 2026 at ICAR-CPRI Shimla.'  href='https://icarcpri.res.in///WriteReadData/LINKS/ra yp81381aa4-b551-4ca6-8b6a-d2ea459eda9a.pdf' target='_blank'>Walk-In-Interview for the 1 post of Research Associate & 3 Post of Young Professional-II on 25th March, 2026 at ICAR-CPRI Shimla.<img alt ='image-PDF' height = '14' src ='https://icarcpri.res.in//Images/pdf.gif'>(1314 ) KB </a><li><a title='Walk-In-Interview for the One post of Young Professional-I on 20 January, 2026 at ICAR-CPRI Shimla.'  href='https://icarcpri.res.in///WriteReadData/LINKS/1768282767_Final_Advertisement_for_the_one_post_of_YP-I_compressed96b65856-3c59-4dcb-aaa3-408a01801702.pdf' target='_blank'>Walk-In-Interview for the One post of Young Professional-I on 20 January, 2026 at ICAR-CPRI Shimla.<img alt ='image-PDF' height = '14' src ='https://icarcpri.res.in//Images/pdf.gif'>(1094 ) KB </a></ul></li></ul></li><li><a title='Contact Us'  href='https://icarcpri.res.in//content/Index/?qlid=5059&Ls_is=5082&lngid=1'>Contact Us</a></li>
+
+
+        </ul>
+    </div>
+
+</nav>
+
+    </div>
+</nav>
+
+
+
+
+<script language="javascript">
+    function ValidateUser() {
+        var pageURL = $(location).attr("href");
+        var _location = document.location.toString();
+        var applicationNameIndex = _location.indexOf('/', _location.indexOf('://') + 3);
+        var applicationName = _location.substring(0, applicationNameIndex) + '/';
+        var webFolderIndex = _location.indexOf('/', _location.indexOf(applicationName) + applicationName.length);
+        var webFolderFullPath = _location.substring(0, webFolderIndex);
+
+        //  var action = webFolderFullPath + "/Content/urldetail/";
+        var action = pageURL + "/Content/urldetail/";
+        var searchtext = $("#StudentName").val();
+        $("#btnlogin").val('Plesae wait..');
+        $.ajax({
+            url: action,
+            data: '{ searchtext:"' + searchtext + '"}',
+            type: "Post",
+            contentType: "application/json;charset=utf-8",
+            dataType: "json",
+            success: function (json) {
+                if (json.isRedirect) {
+                    window.location.href = json.redirectUrl;
+                }
+                else {
+                    var url = RootUrl + RecUnitList.ControllerName + "/" + RecUnitList.ActionName + "/" + RecUnitList.ID;
+                    window.location.href = url;
+                }
+            },
+        });
+    }
+</script>
+
+<script>
+    $("#searchtext").on("keydown", function (e) {
+        if (e.keyCode === 13) {
+            if ($('#searchtext').val().length < 1)
+            {
+                alert("Please enter any key for search .");
+                return false;
+            }
+            else
+            {
+                var pageURL = $(location).attr("href");
+                var _location = document.location.toString();
+                var applicationNameIndex = _location.indexOf('/', _location.indexOf('://') + 3);
+                var applicationName = _location.substring(0, applicationNameIndex) + '/';
+                var webFolderIndex = _location.indexOf('/', _location.indexOf(applicationName) + applicationName.length);
+                var webFolderFullPath = _location.substring(0, webFolderIndex);
+                var newURL = window.location.protocol
+                var action = pageURL + "/Content/urldetail/";
+                var searchtext = $('#searchtext').val();
+                $.ajax({
+                    url: action,
+                    data: '{ searchtext:"' + searchtext + '"}',
+                    type: "Post",
+                    contentType: "application/json;charset=utf-8",
+                    dataType: "json",
+                    success: function (json) {
+                        if (json.isRedirect) {
+                            window.location.href = json.redirectUrl;
+                        }
+                        else {
+                            var url = RootUrl + RecUnitList.ControllerName + "/" + RecUnitList.ActionName + "/" + RecUnitList.ID;
+                            window.location.href = url;
+                        }
+                    },
+                    failure: function (response) {
+                      //  alert(response.responseText);
+                    },
+                    error: function (response) {
+                      //  alert(response.responseText);
+                    }
+                });
+            }
+        }
+    });
+</script>
+
+
+    </div>
+    <div><img src="/Images/inner_headermain.jpg" class="img-responsive" height="230" /></div>
+    <div id="content">
+        <div class="page_container">
+            
+
+
+<div class="container inner_maincontainer">
+    
+
+    <div class="row">
+        <div class="col-md-12" style="padding: 0; margin: 0;">
+            <ul class="breadcrumb">            <li><a title="Home" href="//Home/Index?lngid=1">Home</a></li></ul>
+        </div>
+        <div class="col-md-12 text-right">
+            <div class="input-group pull-right"><div><b>Last Updated On: 1/15/2024 </b><a href="" title="Print" id='btn' onclick='printDiv();'><span class="glyphicon glyphicon-print"></span></a></div></div>
+        </div>
+
+        <div id="print-container">
+            <div id="DivIdToPrint">
+                    <div class="col-md-12">						 
+						
+                                <div class="cms-content">
+                                    <h3 class="innerheading">
+                                        Director's Desk
+                                                                            </h3>
+                                    <p style="text-align: justify; line-height: 115%; background: white;"><span style="font-size: 12pt; line-height: 115%; font-family: verdana, geneva; color: #333333;">Though potato is a household name today in India, it came to this ancient land only about 400 years ago. After its introduction from Europe in the beginning of 17th century, it remained an insignificant crop till independence, largely because of poor productivity of introduced European varieties that were adapted to temperate agro-climate and were suitable for cultivation in hills of India as summer crop. The Government of India established the ICAR-Central Potato Research Institute (CPRI) in the year 1949 to harness the potential of this promising crop for food security. The institute developed suitable varieties and technologies that virtually transformed the temperate potato crop to sub-tropical one enabling its spread from cooler hill regions to the vast Indo-Gangetic plains as a rabi crop. It triggered a revolution in potato production causing very fast growth in area, production and productivity during next five decades.</span></p>
+<p style="text-align: justify; line-height: 115%; background: white;">&nbsp;</p>
+<p style="text-align: justify; line-height: 115%; mso-layout-grid-align: none; text-autospace: none;"><span style="font-size: 12pt; line-height: 115%; font-family: verdana, geneva; color: black;">Potato (<em>Solanum tuberosum </em>L.) is a wholesome food contributing to the energy and nutritional requirements of a large population world over. It has been used as a food by humans for almost 8000 years. It is believed that cultivated potato originated in South America, most likely near Lake Titicaca on the borders of Peru and Bolivia. When Spain conquered Peru, they took potatoes from there and spread it all over the Europe by the end of the sixteenth century. Further spread of potatoes was facilitated by several European countries including Portugal and Britain. However, its significance and role in the global food system is under-appreciated. Potatoes have been known for their use as staple food, cash crop, animal feed, and also as source of starch for industrial uses in almost 160 countries world over.</span></p>
+<p style="text-align: justify; line-height: 115%; mso-layout-grid-align: none; text-autospace: none;"><span style="font-size: 12pt; line-height: 115%; font-family: verdana, geneva; color: black;">Presently, potato is the world&rsquo;s fourth most important food crop with 377 million tonnes of tubers produced from 19.2 million hectares of land, in over 160 countries, in 2016. &nbsp;United Nations named 2008 as the &ldquo;International Year of the Potato&rdquo;, in recognition of contribution of potato as a major food staple to their Millennium Development Goals of providing food security and eradicating poverty. Nutritional value of potato was known since long, specially its high content of ascorbic acid to prevent scurvy. Potato is a good option for food and is capable of producing nutritious food more quickly on lesser land compared to any other major food crops. Attributing to high protein-calorie ratio (17 g protein: 1000 kcal) and short life cycle, potatoes produce more edible energy, protein and dry matter yield on per unit basis in comparison to major food crops. Farmers can harvest up to 80% of biomass as edible, nutritious food in case of potato, whereas in case of cereals only up to 50% can be harvested as grains.&nbsp;</span></p>
+<p style="text-align: justify; line-height: 115%; mso-layout-grid-align: none; text-autospace: none;"><span style="font-size: 12pt; line-height: 115%; font-family: verdana, geneva;">The nutritional value of potato is well established and is known as a versatile, carbohydrate rich and low-fat food. Potatoes at fresh harvest may contain approximately 80% water and 20% dry matter, out of this dry matter approximately 60&ndash;80% is constituted in the form of starch. Its content of dry matter, edible energy and edible protein makes it a good choice for nutrients availability. On dry weight basis, the protein content of potatoes is comparable to cereals and higher when compared to other roots and tubers. Potato is well known to consumers as a source of energy, but its significance of supplying vital nutrients is not well recognized. Potato is an excellent source of complex carbohydrates, dietary fibres and vitamin C. It also contains a variety of health-promoting compounds, such as phytonutrients, that have antioxidative activity. Some of the health-promoting compounds present in potatoes include carotenoids, flavonoids, and caffeic acid. Besides, unique tuber storage proteins like patatin known to exhibit activity against free radicals is also present in it. Potato is also a substantial source of ascorbic acid, thiamine, niacin, pantothenic acid and riboflavin. Due to the nutritional value of potato, it is highly desirable in human diet. The nutritive value of a potato containing food depends on the other components served with it and on the method of preparation. As it is, potato does not contain much of fat and the feeling of satiety it gives, is helpful for the people aiming weight reduction.</span></p>
+<p style="text-align: justify; line-height: 115%; mso-layout-grid-align: none; text-autospace: none;"><span style="font-size: 12pt; line-height: 115%; font-family: verdana, geneva;"><span style="color: #333333;">As mentioned above, CPRI has played a key role in popularizing potato cultivation and utilization under sub-tropical agro-ecosystem. The institute has been working in focussed way on its define mandate; which are: (i) Basic, strategic and applied research to enhance sustainable productivity, quality and utilization of potato; (ii) Repository of genetic resources and scientific information on potato; (iii) Transfer of technology, capacity building and impact assessment of technologies; (iv) Disease-free nucleus and breeder seed potato production; and (v) Coordinate research and validation of technologies through AICRP on potato. </span>Nearly 80% of potato in India is grown in Indo-Gangetic plains. Remaining area is in hills and plateau. The varietal requirements of these regions vary due to their varying agro-ecological conditions. The genetic improvement of a crop is a continuous task as growers and consumers&rsquo; requirements go on changing, and new diseases, pests and abiotic stresses continue to evolve. Till now, the CPRI has developed more than 60 varieties. These have successfully taken care of the needs of potato cultivation in India. Besides, table varieties, processing varieties have also been developed. These varieties have contributed substantially to the observed increase in production and productivity in the country. The varieties/hybrids from Indian program has benefited not only this country but also several other countries like Afghanistan, Bangladesh, Bhutan, Bolivia, Madagascar, Nepal, Philippines and Sri Lanka, where the Indian varieties/ hybrids have been adopted for commercial cultivation.&nbsp;</span></p>
+<p style="text-align: justify; line-height: 115%; mso-layout-grid-align: none; text-autospace: none;"><span lang="EN-IN" style="font-size: 12pt; font-family: verdana, geneva; background-image: initial; background-position: initial; background-size: initial; background-repeat: initial; background-attachment: initial; background-origin: initial; background-clip: initial;">CPRI has well established seed production system in which institute produces about 3000 tonnes of breeders&rsquo; seed annually from about 521 ha farm area distributed over 15 units in the country at our Regional Stations. The breeder&rsquo;s seed is supplied to the State Department of Agriculture/Horticulture for further multiplication in three stages as Foundation-I, Foundation-II, and Certified Seed. The institute has created state-of-art<span class="apple-converted-space">&nbsp;</span>laboratories for conducting basic and strategic research. The institute has established a number of international and national collaborations in various areas of potato R&amp;D. Various technologies have been developed and commercialized by the institute which have benefited a large number of people associated with potato production, trading, processing and/or utilization.&nbsp;</span></p>
+<p style="text-align: justify; line-height: 115%; background: white;">&nbsp;</p>
+<p style="text-align: justify; line-height: 115%; background: white;">&nbsp;</p>
+                                </div>
+						<table border="1" style="" class="hoverTable">
+ 												</table>
+
+					
+                    </div>
+
+                <div style="padding-left:50px;">
+
+                </div>
+
+
+
+                
+                
+                
+                <div class="cataegeory_photopanel">
+                </div>
+            </div>
+            
+
+
+            
+            <div style="width: 100%; padding-top:20px;">
+                <div style="text-align: center; padding-left: 6px; padding-right: 6px;">
+                    <a href="Javascript:history.go(-1)">
+                        
+                        <i class="fa fa-mail-reply" style="font-size:24px">Back</i>
+
+                    </a>
+                </div>
+            </div>
+            
+        </div>
+    </div>
+    </div>
+
+    <script type="text/javascript">
+        $(document).ready(function () {
+            $('#fade').cycle();
+        });
+
+    </script>
+
+    
+<script>
+        function printDiv() {
+            var hedaer = '<div class="row" style="padding:0px 0px 0px 0px; background-color: #fff; margin: 0;">';
+            hedaer = hedaer + '<div class="container">';
+            var _location = document.location.toString();
+            var applicationNameIndex = _location.indexOf('/', _location.indexOf('://') + 3);
+            var applicationName = _location.substring(0, applicationNameIndex) + '/';
+            var webFolderIndex = _location.indexOf('/', _location.indexOf(applicationName) + applicationName.length);
+            var webFolderFullPath = _location.substring(0, webFolderIndex);
+            hedaer = hedaer + '<div class="col-md-1 headeremblemb" style=""><img class="img-thumbnail zoom" src="' + webFolderFullPath + '/images/printlogo.png" width="100%" height="100" /></div>';
+            hedaer = hedaer + '</div></div>';
+            var datetimeshow = '<br /><div style="float:right;"><b>Last Updated On: 1/15/2024  </b></div>';
+            var divToPrint = document.getElementById('DivIdToPrint');
+            var newWin = window.open('', 'Print-Window');
+            newWin.document.open();
+            newWin.document.write('<html><body onload="window.print()">' + hedaer + '' + datetimeshow + '' + divToPrint.innerHTML + '</body></html>');
+            newWin.document.close();
+            setTimeout(function () { newWin.close(); }, 10);
+
+        }
+</script>
+
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
+    <script src="/Scripts/ViewPhotoBox/jquery-1.11.0.min.js" type="text/javascript"></script>
+
+    <script src="/Scripts/ViewPhotoBox/jquery.cycle2.js"></script>
+
+    <script type="text/javascript" language="javascript">
+        function newwin1(win, popwidth, popheight) {
+            var left = (screen.width / 2) - (popwidth / 2);
+            var top = (screen.height / 2) - (popheight / 2);
+            window.open(win, "mywin22", 'directories=0,titlebar=0,toolbar=0,location=0,status=0,menubar=0,scrollbars=0,resizable=0,width=' + popwidth + ', height=' + popheight + ',top=' + top + ', left=' + left);
+        }
+    </script>
+    <script type="text/javascript">
+        $(document).ready(function () {
+            $("#grid1 tr:even").css("background-color", "#f1f6fa");
+            $("#grid1 tr:even").css("font-family", "verdana");
+            $("#grid1 tr:even").css("font-size", "12px");
+            $("#grid1 tr:even").css("height", "25px");
+            $("#grid1 tr:odd").css("background-color", "#e3eef4");
+            $("#grid1 tr:odd").css("font-family", "verdana");
+            $("#grid1 tr:odd").css("font-size", "12px!important");
+            $("#grid1 tr:odd").css("height", "25px");
+
+        });
+    </script>
+    <script src="/Scripts/ViewPhotoBox/jquery-1.11.0.min.js"></script>
+    <script src="/Scripts/ViewPhotoBox/jquery.cycle2.js"></script>
+    <script src="/Scripts/ViewPhotoBox/number_slideshow.js"></script>
+    <script type="text/javascript">
+        $(document).ready(function () {
+            $('#fade').cycle();
+        });
+
+    </script>
+    <link media="screen" href="/Scripts/ViewPhotoBox/jquery.fancybox-1.3.4.css" rel="stylesheet" />
+    <style type="text/css">
+        a.fancybox img {
+            border: none;
+            box-shadow: 0 1px 7px rgba(0,0,0,0.6);
+            -o-transform: scale(1,1);
+            -ms-transform: scale(1,1);
+            -moz-transform: scale(1,1);
+            -webkit-transform: scale(1,1);
+            transform: scale(1,1);
+            -o-transition: all 0.2s ease-in-out;
+            -ms-transition: all 0.2s ease-in-out;
+            -moz-transition: all 0.2s ease-in-out;
+            -webkit-transition: all 0.2s ease-in-out;
+            transition: all 0.2s ease-in-out;
+        }
+
+        a.fancybox:hover img {
+            position: relative;
+            z-index: 999;
+            -o-transform: scale(1.03,1.03);
+            -ms-transform: scale(1.03,1.03);
+            -moz-transform: scale(1.03,1.03);
+            -webkit-transform: scale(1.03,1.03);
+            transform: scale(1.03,1.03);
+        }
+    </style>
+    <script src="/js/clientchks.js"></script>
+    <script language="javascript" type="text/javascript">
+        function newwin(win) {
+            window.open(win, "mywin22", "toolbar=no,menubar=no,directories=no,left=200,width=670,height=600,resizable=yes,scrollbars=no")
+        }
+    </script>
+    <script type="text/javascript" language="javascript">
+        function newwin(win, popwidth, popheight) {
+            var left = (screen.width / 2) - (popwidth / 2);
+            var top = (screen.height / 2) - (popheight / 2);
+            window.open(win, "mywin22", 'toolbar=no,menubar=no,directories=no,left=0,width=' + popwidth + ', height=' + popheight + ',resizable=yes,scrollbars=yes,top=' + top + ', left=' + left);
+        }
+    </script>
+
+    <script src="/Scripts/ViewPhotoBox/jquery-1.11.0.min.js"></script>
+    <script src="/Scripts/ViewPhotoBox/jquery-migrate-1.2.1.min.js"></script>
+    <script src="/Scripts/ViewPhotoBox/jquery.fancybox-1.3.4.pack.min.js"></script>
+    <script type="text/javascript">
+        $(function ($) {
+            var addToAll = false;
+            var gallery = true;
+            var titlePosition = 'inside';
+            $(addToAll ? 'img' : 'img.fancybox').each(function () {
+                var $this = $(this);
+                var title = $this.attr('title');
+                var src = $this.attr('data-big') || $this.attr('src');
+                var a = $('<a href="#" class="fancybox"></a>').attr('href', src).attr('title', title);
+                $this.wrap(a);
+            });
+            if (gallery)
+                $('a.fancybox').attr('rel', 'fancyboxgallery');
+            $('a.fancybox').fancybox({
+                titlePosition: titlePosition
+            });
+        });
+        $.noConflict();
+    </script>
+        </div>
+    </div>
+
+
+<div id="copyright">
+    <div class="container">
+        <div class="row">
+            <div class="col-md-12  text-center">
+                <ul class="list-inline navbar-right">
+                        <li><a href="https://icarcpri.res.in//content/Index/?qlid=5268&amp;Ls_is=5580&amp;lngid=1" >Upcoming Events <span class="sr-only"></span><span class="glyphicon"></span></a>&nbsp;&nbsp;&nbsp;|&nbsp;&nbsp;</li>
+                        <li><a href="https://icarcpri.res.in//content/Index/?qlid=22&amp;Ls_is=22&amp;lngid=1" >Disclaimer <span class="sr-only"></span><span class="glyphicon"></span></a>&nbsp;&nbsp;&nbsp;|&nbsp;&nbsp;</li>
+                        <li><a href="https://icarcpri.res.in//content/Index/?qlid=24&amp;Ls_is=24&amp;lngid=1" >Copyright Policy <span class="sr-only"></span><span class="glyphicon"></span></a>&nbsp;&nbsp;&nbsp;|&nbsp;&nbsp;</li>
+                        <li><a href="https://icarcpri.res.in//content/Index/?qlid=25&amp;Ls_is=25&amp;lngid=1" >Website Policies <span class="sr-only"></span><span class="glyphicon"></span></a>&nbsp;&nbsp;&nbsp;|&nbsp;&nbsp;</li>
+                        <li><a href="https://icarcpri.res.in//content/Index/?qlid=26&amp;Ls_is=26&amp;lngid=1" >Terms & Conditions <span class="sr-only"></span><span class="glyphicon"></span></a>&nbsp;&nbsp;&nbsp;|&nbsp;&nbsp;</li>
+                        <li><a href="https://icarcpri.res.in//content/Index/?qlid=27&amp;Ls_is=27&amp;lngid=1" >Help <span class="sr-only"></span><span class="glyphicon"></span></a>&nbsp;&nbsp;&nbsp;|&nbsp;&nbsp;</li>
+                        <li><a href="https://icarcpri.res.in//Feedback/Index/?lngid=1" >Feedback <span class="sr-only"></span><span class="glyphicon"></span></a>&nbsp;&nbsp;&nbsp;|&nbsp;&nbsp;</li>
+                </ul>
+            </div>
+
+            <div class="col-md-12 text-center">
+                
+                <p>ICAR</p>
+                <div class="span12" style="color:white; font-size:15px; padding:0px; line-height:25px; text-align:center; width:100%; margin:10px 0px 0px 0px"><strong>Visitor Counter:- </strong> <img src="/Cs_counter.ashx" id="imgCaptcha1" alt="imgCaptcha1" width="150" height="20" /> </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+    <script src="/Scripts/jquery-3.3.1.js"></script>
+
+    <script src="/Scripts/jquery.validate.min.js"></script>
+<script src="/Scripts/jquery.validate.unobtrusive.min.js"></script>
+
+    <script src="/Scripts/bootstrap.js"></script>
+<script src="/Scripts/bootbox.min.js"></script>
+<script src="/Scripts/bootstrap-datepicker.js"></script>
+
+    
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.12.4/jquery.min.js"></script>
+    <script src="/js/bootstrap.min.js"></script>
+    <script type="text/javascript">
+            $('.carousel[data-type="multi"] .item').each(function () {
+                var next = $(this).next();
+                if (!next.length) {
+                    next = $(this).siblings(':first');
+                }
+                next.children(':first-child').clone().appendTo($(this));
+
+                for (var i = 0; i < 4; i++) {
+                    next = next.next();
+                    if (!next.length) {
+                        next = $(this).siblings(':first');
+                    }
+
+                    next.children(':first-child').clone().appendTo($(this));
+                }
+            });
+    </script>
+    <script src="/js/slider.js"></script>
+    
+    <script type="text/javascript" src="/js/jquery.easing.1.3.js"></script>
+    <script type="text/javascript" src="/js/jquery.mobile.customized.min.js"></script>
+    <script type="text/javascript" src="/js/camera.js"></script>
+
+    <script src="/js/bootstrap.js"></script>
+    <script src="/js/superfish.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prettyPhoto/3.1.6/js/jquery.prettyPhoto.js"></script>
+    
+    <script type="text/javascript" src="/js/jquery.jcarousel.js"></script>
+    <script type="text/javascript" src="/js/jquery.tweet.js"></script>
+    <script type="text/javascript" src="/js/myscript.js"></script>
+    <script src="/js/bootstrap.js"></script>
+    <script type="text/javascript">
+            $(document).ready(function () {
+                //Slider
+                $('#camera_wrap_1').camera();
+                //Featured works & latest posts
+                $('#mycarousel, #mycarousel2, #newscarousel').jcarousel();
+            });
+    </script>
+</body>
+</html>

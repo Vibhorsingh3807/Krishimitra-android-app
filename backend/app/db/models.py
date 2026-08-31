@@ -112,3 +112,37 @@ class KnowledgeFact(Base):
     answer_hi = Column(Text)
     source = Column(String(200))
     updated_at = Column(DateTime, default=datetime.datetime.utcnow)
+
+class MarketPrice(Base):
+    __tablename__ = "market_prices"
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    crop_id = Column(String(50), index=True)
+    commodity = Column(String(100), index=True, nullable=False)
+    variety = Column(String(100), default="Standard")
+    state = Column(String(100), index=True, nullable=False)
+    district = Column(String(100), index=True, nullable=False)
+    market = Column(String(100), index=True, nullable=False)
+    min_price = Column(Float, nullable=False)
+    max_price = Column(Float, nullable=False)
+    modal_price = Column(Float, nullable=False)
+    price_date = Column(String(50), index=True, nullable=False)
+    unit = Column(String(50), default="₹/Quintal")
+    source = Column(String(200), default="DAFW / Agmarknet / Kisan Call Centre")
+    updated_at = Column(DateTime, default=datetime.datetime.utcnow, onupdate=datetime.datetime.utcnow)
+
+class CropVariety(Base):
+    __tablename__ = "crop_varieties"
+
+    id = Column(String(100), primary_key=True, index=True)
+    crop_id = Column(String(50), index=True, nullable=False)
+    variety_name = Column(String(100), nullable=False)
+    category = Column(String(100))
+    duration_days = Column(String(100))
+    yield_potential = Column(String(100))
+    suitable_zones = Column(Text)
+    special_features = Column(Text)
+    special_features_hi = Column(Text)
+    source = Column(String(200))
+    updated_at = Column(DateTime, default=datetime.datetime.utcnow)
+

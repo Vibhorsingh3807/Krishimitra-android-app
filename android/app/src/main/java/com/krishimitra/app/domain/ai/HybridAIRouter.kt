@@ -9,7 +9,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 
 interface AIProvider {
-    suspend fun answer(query: String, crop: String? = null, forceLang: String? = null): ChatMessage
+    suspend fun answer(query: String, crop: String? = null, district: String? = null, forceLang: String? = null): ChatMessage
 }
 
 class LocalAIProvider(
@@ -17,14 +17,17 @@ class LocalAIProvider(
     private val languageModel: OnnxLanguageModel,
     private val localEngine: LocalNLPEngine
 ) : AIProvider {
-    override suspend fun answer(query: String, crop: String?, forceLang: String?): ChatMessage = withContext(Dispatchers.Default) {
+    override suspend fun answer(query: String, crop: String?, district: String?, forceLang: String?): ChatMessage = withContext(Dispatchers.Default) {
         val isHindi = forceLang == "hi" || (forceLang == null && query.any { it.code in 0x0900..0x097F })
 
-        // 1. Retrieve knowledge via Local BM25 RAG Engine
+        val (predictedIntent, _) = localEngine.predictIntent(query)
+        val isMarketQuery = predictedIntent.startsWith("market_price")
+
+        // 1. Retrieve knowledge via Local BM25 RAG Engine (unless market query meant for live DB)
         val ragResult = ragEngine.retrieve(query, forceLang)
 
         // 2. If RAG found a match or farmer experience, synthesize via OnnxLanguageModel
-        if (ragResult.bestRecord != null || ragResult.farmerExperiences.isNotEmpty()) {
+        if (!isMarketQuery && (ragResult.bestRecord != null || ragResult.farmerExperiences.isNotEmpty())) {
             val generatedText = languageModel.generateAnswer(ragResult)
             return@withContext ChatMessage(
                 text = generatedText,
@@ -35,9 +38,8 @@ class LocalAIProvider(
             )
         }
 
-        // 3. Fall back to Local NLP Intent & Knowledge Base
-        // Ensures greetings, fertilizer, sowing, irrigation, pests, and schemes in Hindi ALWAYS answer factually!
-        val nlpResult = localEngine.answerQuery(query, forceLang = if (isHindi) "hi" else "en")
+        // 3. Fall back to Local NLP Intent & Knowledge Base / Live DB
+        val nlpResult = localEngine.answerQuery(query, cropContext = crop, districtContext = district, forceLang = if (isHindi) "hi" else "en")
         val ans = if (isHindi) nlpResult.answerHi else nlpResult.answer
 
         return@withContext ChatMessage(
@@ -51,8 +53,8 @@ class LocalAIProvider(
 }
 
 class RemoteAIProvider(private val apiClient: ApiClient) : AIProvider {
-    override suspend fun answer(query: String, crop: String?, forceLang: String?): ChatMessage = withContext(Dispatchers.IO) {
-        val cloudResponse = apiClient.queryCloudAI(query, crop)
+    override suspend fun answer(query: String, crop: String?, district: String?, forceLang: String?): ChatMessage = withContext(Dispatchers.IO) {
+        val cloudResponse = apiClient.queryCloudAI(query, crop, district)
         if (cloudResponse != null) {
             val ans = cloudResponse.get("answer").asString
             val source = cloudResponse.get("source")?.asString ?: "Cloud AI (ICAR Grounded)"
@@ -80,9 +82,9 @@ class HybridAIRouter(
     private val localProvider = LocalAIProvider(ragEngine, languageModel, localEngine)
     private val remoteProvider = RemoteAIProvider(apiClient)
 
-    suspend fun routeQuery(query: String, crop: String? = null, forceLang: String? = null): ChatMessage = withContext(Dispatchers.Default) {
-        // Evaluate local provider first (RAG + LLM + NLP fallback)
-        val localMsg = localProvider.answer(query, crop, forceLang)
+    suspend fun routeQuery(query: String, crop: String? = null, district: String? = null, forceLang: String? = null): ChatMessage = withContext(Dispatchers.Default) {
+        // Evaluate local provider first (RAG + LLM + NLP/Market DB fallback)
+        val localMsg = localProvider.answer(query, crop, district, forceLang)
 
         // If local answer is verified OR device has no network, return immediately
         if (localMsg.isVerified || !apiClient.isNetworkAvailable()) {
@@ -91,10 +93,12 @@ class HybridAIRouter(
 
         // Low confidence AND internet available -> Attempt remote AI fallback
         try {
-            return@withContext remoteProvider.answer(query, crop, forceLang)
+            return@withContext remoteProvider.answer(query, crop, district, forceLang)
         } catch (e: Exception) {
             // Graceful fallback to local response
             return@withContext localMsg
         }
     }
 }
+
+

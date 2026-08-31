@@ -68,6 +68,7 @@ class MainActivity : ComponentActivity() {
                         Screen.Weather.route -> stringResource(R.string.weather_title)
                         Screen.Schemes.route -> stringResource(R.string.schemes_title)
                         Screen.Loans.route -> stringResource(R.string.loans_title)
+                        Screen.Mandi.route -> stringResource(R.string.action_mandi)
                         Screen.CropGuide.route -> stringResource(R.string.action_crops)
                         Screen.Sources.route -> stringResource(R.string.sources_attribution)
                         else -> stringResource(R.string.app_name)
@@ -75,6 +76,7 @@ class MainActivity : ComponentActivity() {
 
                     val showBack = currentRoute == Screen.CropGuide.route ||
                                    currentRoute == Screen.Loans.route ||
+                                   currentRoute == Screen.Mandi.route ||
                                    currentRoute == Screen.Sources.route
 
                     Scaffold(

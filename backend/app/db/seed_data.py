@@ -12,7 +12,7 @@ def seed_database():
     try:
         # Seed Crops
         crops_file = os.path.join(DATA_DIR, "verified_crops.json")
-        if os.path.exists(crops_file) and db.query(Crop).count() == 0:
+        if os.path.exists(crops_file):
             with open(crops_file, "r", encoding="utf-8") as f:
                 crops_data = json.load(f)
             for c in crops_data:
@@ -51,7 +51,7 @@ def seed_database():
 
         # Seed Diseases
         diseases_file = os.path.join(DATA_DIR, "verified_diseases.json")
-        if os.path.exists(diseases_file) and db.query(Disease).count() == 0:
+        if os.path.exists(diseases_file):
             with open(diseases_file, "r", encoding="utf-8") as f:
                 diseases_data = json.load(f)
             for d in diseases_data:
@@ -79,7 +79,7 @@ def seed_database():
 
         # Seed Schemes
         schemes_file = os.path.join(DATA_DIR, "verified_schemes.json")
-        if os.path.exists(schemes_file) and db.query(Scheme).count() == 0:
+        if os.path.exists(schemes_file):
             with open(schemes_file, "r", encoding="utf-8") as f:
                 schemes_data = json.load(f)
             for s in schemes_data:
@@ -105,7 +105,7 @@ def seed_database():
 
         # Seed Loans
         loans_file = os.path.join(DATA_DIR, "verified_loans.json")
-        if os.path.exists(loans_file) and db.query(Loan).count() == 0:
+        if os.path.exists(loans_file):
             with open(loans_file, "r", encoding="utf-8") as f:
                 loans_data = json.load(f)
             for l in loans_data:
@@ -132,25 +132,32 @@ def seed_database():
                 db.merge(loan)
             logger.info(f"Seeded {len(loans_data)} loans.")
 
-        # Seed Sample Knowledge Facts
+        # Seed Knowledge Facts
         facts_file = os.path.join(DATA_DIR, "generated_training_questions.json")
-        if os.path.exists(facts_file) and db.query(KnowledgeFact).count() == 0:
+        if os.path.exists(facts_file):
             with open(facts_file, "r", encoding="utf-8") as f:
                 facts_data = json.load(f)
-            for k in facts_data[:300]: # Seed representative 300 facts
-                fact = KnowledgeFact(
-                    intent=k["intent"],
-                    crop_id=k.get("crop_id"),
-                    language=k.get("lang"),
-                    question=k["question"],
-                    answer_en=k["answer_en"],
-                    answer_hi=k["answer_hi"],
-                    source=k["source"]
-                )
-                db.add(fact)
-            logger.info("Seeded knowledge facts.")
+            if db.query(KnowledgeFact).count() < len(facts_data):
+                db.query(KnowledgeFact).delete()
+                for k in facts_data[:600]: # Seed representative 600 facts across all crops & intents
+                    fact = KnowledgeFact(
+                        intent=k["intent"],
+                        crop_id=k.get("crop_id"),
+                        language=k.get("lang"),
+                        question=k["question"],
+                        answer_en=k["answer_en"],
+                        answer_hi=k["answer_hi"],
+                        source=k["source"]
+                    )
+                    db.add(fact)
+                logger.info("Seeded representative knowledge facts.")
 
         db.commit()
+
+        # Seed Market Prices and Priority Crop Varieties
+        from backend.app.db.ingest_datasets import run_ingestion
+        run_ingestion()
+
     except Exception as e:
         logger.error(f"Error seeding database: {e}")
         db.rollback()
@@ -159,3 +166,4 @@ def seed_database():
 
 if __name__ == "__main__":
     seed_database()
+
