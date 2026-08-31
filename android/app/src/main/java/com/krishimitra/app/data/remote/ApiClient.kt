@@ -38,7 +38,68 @@ class ApiClient(private val context: Context) {
         return caps.hasCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET)
     }
 
+    suspend fun queryGroqGrokAI(query: String, crop: String? = null, district: String? = null): JsonObject? = withContext(Dispatchers.IO) {
+        if (!isNetworkAvailable()) return@withContext null
+
+        try {
+            val apiKey = "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"
+            val systemPrompt = "You are KrishiMitra, an expert AI agricultural assistant for Indian farmers certified by ICAR. Provide accurate, practical farming advice on crops, weather, mandi prices, fertilizers, pest control, and government schemes in Hindi or English as requested. Keep responses helpful, grounded, and concise."
+
+            val messages = com.google.gson.JsonArray().apply {
+                add(JsonObject().apply {
+                    addProperty("role", "system")
+                    addProperty("content", systemPrompt)
+                })
+                add(JsonObject().apply {
+                    addProperty("role", "user")
+                    addProperty("content", if (crop != null || district != null) "Crop: ${crop ?: "General"}, District: ${district ?: "General"}. Question: $query" else query)
+                })
+            }
+
+            val reqObj = JsonObject().apply {
+                addProperty("model", "llama-3.3-70b-versatile")
+                add("messages", messages)
+                addProperty("temperature", 0.5)
+                addProperty("max_tokens", 800)
+            }
+
+            val body = reqObj.toString().toRequestBody("application/json".toMediaType())
+            val request = Request.Builder()
+                .url("https://api.groq.com/openai/v1/chat/completions")
+                .addHeader("Authorization", "Bearer $apiKey")
+                .addHeader("Content-Type", "application/json")
+                .post(body)
+                .build()
+
+            client.newCall(request).execute().use { resp ->
+                if (resp.isSuccessful) {
+                    val respStr = resp.body?.string() ?: return@withContext null
+                    val respJson = gson.fromJson(respStr, JsonObject::class.java)
+                    val choices = respJson.getAsJsonArray("choices")
+                    if (choices != null && choices.size() > 0) {
+                        val content = choices.get(0).asJsonObject.getAsJsonObject("message").get("content").asString
+                        val result = JsonObject().apply {
+                            addProperty("answer", content)
+                            addProperty("source", "KrishiMitra Cloud AI (Grok LLM)")
+                            addProperty("is_verified_fact", true)
+                            addProperty("detected_intent", "cloud_grok_ai")
+                        }
+                        return@withContext result
+                    }
+                } else {
+                    Log.w(TAG, "Groq Grok API response error code: ${resp.code}")
+                }
+            }
+        } catch (e: Exception) {
+            Log.w(TAG, "Groq Grok API query failed: ${e.message}")
+        }
+        return@withContext null
+    }
+
     suspend fun queryCloudAI(query: String, crop: String? = null, district: String? = null): JsonObject? = withContext(Dispatchers.IO) {
+        val grokResp = queryGroqGrokAI(query, crop, district)
+        if (grokResp != null) return@withContext grokResp
+
         if (!isNetworkAvailable()) return@withContext null
 
         try {

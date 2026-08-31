@@ -12,7 +12,10 @@ class Settings(BaseSettings):
 
     DATABASE_URL: str = "sqlite:///./krishimitra.db"
 
-    AI_FALLBACK_PROVIDER: str = "local"  # 'local', 'openai', 'gemini'
+    AI_FALLBACK_PROVIDER: str = "groq"  # 'groq', 'local', 'openai', 'gemini'
+    GROQ_API_KEY: str = "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"
+    GROQ_MODEL: str = "llama-3.3-70b-versatile"
+
     OPENAI_API_KEY: str = ""
     OPENAI_MODEL: str = "gpt-4o-mini"
 
