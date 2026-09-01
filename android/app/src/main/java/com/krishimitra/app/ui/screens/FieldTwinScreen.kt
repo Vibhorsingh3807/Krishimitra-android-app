@@ -31,12 +31,14 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.krishimitra.app.data.location.DeviceLocationProvider
 import com.krishimitra.app.data.repository.FieldDigitalTwinRepository
 import com.krishimitra.app.domain.language.AppLanguage
 import com.krishimitra.app.domain.language.LanguageManager
 import com.krishimitra.app.domain.model.*
 import com.krishimitra.app.domain.twin.FieldTwinRuleEngine
 import com.krishimitra.app.ui.components.FieldCanvasMap
+import com.krishimitra.app.ui.components.GoogleMapLikeView
 import com.krishimitra.app.ui.theme.*
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -51,6 +53,7 @@ fun FieldTwinScreen(
     val isHindi = currentLanguage == AppLanguage.HINDI
 
     val repository = remember { FieldDigitalTwinRepository(context) }
+    val locationProvider = remember { DeviceLocationProvider(context) }
     var fields by remember { mutableStateOf(repository.getFields()) }
     var selectedField by remember { mutableStateOf(fields.firstOrNull()) }
 
@@ -58,6 +61,9 @@ fun FieldTwinScreen(
     var showIrrigationDialog by remember { mutableStateOf(false) }
     var irrigationAmount by remember { mutableStateOf("35") }
     var irrigationNotes by remember { mutableStateOf("") }
+
+    var useSatelliteMap by remember { mutableStateOf(true) }
+    var userLocation by remember { mutableStateOf<GeoPoint?>(null) }
 
     // Summary data for selected field
     var summary by remember(selectedField) {
@@ -264,23 +270,105 @@ fun FieldTwinScreen(
                         }
                     }
 
-                    // FIELD MAP (Centerpiece Canvas)
+                    // FIELD MAP (Centerpiece Satellite & Canvas Facility)
                     item {
-                        Card(
-                            modifier = Modifier.fillMaxWidth(),
-                            shape = RoundedCornerShape(18.dp),
-                            elevation = CardDefaults.cardElevation(3.dp)
-                        ) {
-                            FieldCanvasMap(
-                                isEditMode = false,
-                                field = selectedField,
-                                zones = summary?.zones ?: emptyList(),
-                                observations = summary?.latestObservations ?: emptyMap(),
-                                selectedZoneId = selectedZone?.id,
-                                onZoneSelected = { tappedZone ->
-                                    selectedZone = tappedZone
+                        Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Text(
+                                    text = if (isHindi) "खेत का नक्शा व 9 ज़ोन स्थिति:" else "Field Map & 9-Zone Twin:",
+                                    fontWeight = FontWeight.Bold,
+                                    fontSize = 13.5.sp,
+                                    color = TextPrimary
+                                )
+
+                                Row(
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    horizontalArrangement = Arrangement.spacedBy(6.dp)
+                                ) {
+                                    // GPS Location Button
+                                    OutlinedButton(
+                                        onClick = {
+                                            val loc = locationProvider.getLastKnownLocation()
+                                            if (loc != null) {
+                                                userLocation = GeoPoint(loc.latitude, loc.longitude)
+                                                Toast.makeText(
+                                                    context,
+                                                    if (isHindi) "✓ आपका वर्तमान GPS स्थान चिह्नित किया गया" else "✓ Centered on your GPS location",
+                                                    Toast.LENGTH_SHORT
+                                                ).show()
+                                            } else {
+                                                Toast.makeText(
+                                                    context,
+                                                    if (isHindi) "GPS स्थान उपलब्ध नहीं" else "GPS Location unavailable",
+                                                    Toast.LENGTH_SHORT
+                                                ).show()
+                                            }
+                                        },
+                                        shape = RoundedCornerShape(8.dp),
+                                        contentPadding = PaddingValues(horizontal = 8.dp, vertical = 2.dp)
+                                    ) {
+                                        Icon(Icons.Default.MyLocation, contentDescription = null, modifier = Modifier.size(13.dp), tint = GreenPrimary)
+                                        Spacer(modifier = Modifier.width(3.dp))
+                                        Text(if (isHindi) "मेरा स्थान" else "GPS", fontSize = 11.sp, color = GreenPrimary)
+                                    }
+
+                                    // Mode Switcher Pill
+                                    Surface(
+                                        modifier = Modifier.clickable { useSatelliteMap = !useSatelliteMap },
+                                        shape = RoundedCornerShape(8.dp),
+                                        color = if (useSatelliteMap) Color(0xFF1B5E20) else Color(0xFF455A64)
+                                    ) {
+                                        Text(
+                                            text = if (useSatelliteMap) "🛰️ उपग्रह" else "📊 वेक्टर",
+                                            color = Color.White,
+                                            fontSize = 11.sp,
+                                            fontWeight = FontWeight.Bold,
+                                            modifier = Modifier.padding(horizontal = 8.dp, vertical = 5.dp)
+                                        )
+                                    }
                                 }
-                            )
+                            }
+
+                            Card(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .height(290.dp),
+                                shape = RoundedCornerShape(18.dp),
+                                elevation = CardDefaults.cardElevation(3.dp)
+                            ) {
+                                if (useSatelliteMap) {
+                                    GoogleMapLikeView(
+                                        modifier = Modifier.fillMaxSize(),
+                                        initialCenterLat = selectedField?.centerLat ?: 28.7040,
+                                        initialCenterLon = selectedField?.centerLon ?: 77.1025,
+                                        initialZoom = 16,
+                                        isEditMode = false,
+                                        boundaryPoints = selectedField?.boundary ?: emptyList(),
+                                        zones = summary?.zones ?: emptyList(),
+                                        observations = summary?.latestObservations ?: emptyMap(),
+                                        selectedZoneId = selectedZone?.id,
+                                        userLocation = userLocation,
+                                        onZoneClick = { tappedZone ->
+                                            selectedZone = tappedZone
+                                        }
+                                    )
+                                } else {
+                                    FieldCanvasMap(
+                                        isEditMode = false,
+                                        field = selectedField,
+                                        zones = summary?.zones ?: emptyList(),
+                                        observations = summary?.latestObservations ?: emptyMap(),
+                                        selectedZoneId = selectedZone?.id,
+                                        onZoneSelected = { tappedZone ->
+                                            selectedZone = tappedZone
+                                        }
+                                    )
+                                }
+                            }
                         }
                     }
 
