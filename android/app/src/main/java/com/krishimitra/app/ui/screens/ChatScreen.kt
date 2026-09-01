@@ -1,7 +1,13 @@
 package com.krishimitra.app.ui.screens
 
+import android.graphics.Bitmap
+import android.graphics.BitmapFactory
+import android.net.Uri
 import android.view.MotionEvent
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
@@ -20,7 +26,9 @@ import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.input.pointer.pointerInteropFilter
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -32,6 +40,7 @@ import com.krishimitra.app.ui.theme.*
 import com.krishimitra.app.voice.VoiceManager
 import com.krishimitra.app.voice.VoiceMode
 import kotlinx.coroutines.launch
+import java.io.InputStream
 import java.util.Locale
 
 @OptIn(ExperimentalComposeUiApi::class)
@@ -40,10 +49,13 @@ fun ChatScreen(
     aiRouter: HybridAIRouter,
     voiceManager: VoiceManager
 ) {
+    val context = LocalContext.current
     val coroutineScope = rememberCoroutineScope()
     val listState = rememberLazyListState()
 
     var inputText by remember { mutableStateOf("") }
+    var attachedBitmap by remember { mutableStateOf<Bitmap?>(null) }
+
     val isListening by voiceManager.isListening.collectAsState()
     val isSpeaking by voiceManager.isSpeaking.collectAsState()
     val voiceMode by voiceManager.voiceMode.collectAsState()
@@ -58,12 +70,30 @@ fun ChatScreen(
         }
     }
 
+    // Gallery Photo Picker Launcher for Gemini Vision AI
+    val galleryLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.GetContent()
+    ) { uri: Uri? ->
+        if (uri != null) {
+            try {
+                val inputStream: InputStream? = context.contentResolver.openInputStream(uri)
+                val bitmap = BitmapFactory.decodeStream(inputStream)
+                inputStream?.close()
+                if (bitmap != null) {
+                    attachedBitmap = bitmap
+                }
+            } catch (e: Throwable) {
+                android.util.Log.e("ChatScreen", "Failed to load attached photo: ${e.message}")
+            }
+        }
+    }
+
     val messages = remember {
         mutableStateListOf(
             ChatMessage(
-                text = "नमस्ते! मैं आपका कृषिमित्र कृषि सहायक हूँ। आप अपनी फसल, मंडी भाव, उन्नत किस्में, खाद-बीज, रोग उपचार व सरकारी योजनाओं के बारे में कोई भी प्रश्न पूछ सकते हैं।",
+                text = "नमस्ते! मैं आपका कृषिमित्र कृषि सहायक हूँ। आप अपनी फसल, मंडी भाव, उन्नत किस्में, खाद-बीज, रोग उपचार के बारे में प्रश्न पूछ सकते हैं, बोल सकते हैं या फसल की फोटो (🖼️ Attach Image) अपलोड करके Gemini Vision AI से सीधा सलाह प्राप्त कर सकते हैं।",
                 isUser = false,
-                source = "भाकृअनुप (ICAR) एवं एगमार्कनेट प्रमाणित ज्ञानकोश",
+                source = "✨ Gemini 1.5 Flash Vision & Grok AI Certified",
                 isVerified = true
             )
         )
@@ -79,11 +109,21 @@ fun ChatScreen(
         "किसान क्रेडिट कार्ड (KCC) की ब्याज दर क्या है?"
     )
 
-    fun sendMessage(query: String) {
-        if (query.isBlank()) return
-        val userMsg = ChatMessage(text = query, isUser = true)
+    fun bitmapToBase64(bmp: Bitmap): String {
+        val outputStream = java.io.ByteArrayOutputStream()
+        bmp.compress(Bitmap.CompressFormat.JPEG, 80, outputStream)
+        val byteArray = outputStream.toByteArray()
+        return android.util.Base64.encodeToString(byteArray, android.util.Base64.NO_WRAP)
+    }
+
+    fun sendMessage(query: String, bitmap: Bitmap? = attachedBitmap) {
+        if (query.isBlank() && bitmap == null) return
+        val userMsg = ChatMessage(text = query, isUser = true, attachedImageBitmap = bitmap)
         messages.add(userMsg)
+
+        val imageBase64 = if (bitmap != null) bitmapToBase64(bitmap) else null
         inputText = ""
+        attachedBitmap = null
 
         coroutineScope.launch {
             try {
@@ -98,14 +138,14 @@ fun ChatScreen(
                         else "en"
                     }
                 }
-                val reply = aiRouter.routeQuery(query, forceLang = forceLang)
+                val reply = aiRouter.routeMultimodalQuery(query, imageBase64, forceLang = forceLang)
                 messages.add(reply)
                 listState.animateScrollToItem(messages.size - 1)
                 voiceManager.speak(reply.text, forceHindi = (forceLang == "hi"))
             } catch (e: Exception) {
                 messages.add(
                     ChatMessage(
-                        text = "क्षमा करें, उत्तर लोड करने में समस्या आई। कृपया दोबारा प्रयास करें।",
+                        text = "क्षमा करें, उत्तर प्राप्त करने में समस्या आई। कृपया दोबारा प्रयास करें।",
                         isUser = false,
                         source = "कृषिमित्र सहायक",
                         isVerified = false
@@ -141,127 +181,142 @@ fun ChatScreen(
                 )
             )
 
-            // Switch language chip
-            AssistChip(
-                onClick = {
-                    val nextMode = when (voiceMode) {
-                        VoiceMode.AUTO -> VoiceMode.HINDI
-                        VoiceMode.HINDI -> VoiceMode.ENGLISH
-                        VoiceMode.ENGLISH -> VoiceMode.AUTO
-                    }
-                    voiceManager.setVoiceMode(nextMode)
-                },
-                label = { Text("बदलें (Switch)") },
-                leadingIcon = {
-                    Icon(
-                        imageVector = Icons.Default.Translate,
-                        contentDescription = null,
-                        modifier = Modifier.size(16.dp)
-                    )
-                }
-            )
+            Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                FilterChip(
+                    selected = voiceMode == VoiceMode.AUTO,
+                    onClick = { voiceManager.setVoiceMode(VoiceMode.AUTO) },
+                    label = { Text("Auto", fontSize = 11.sp) }
+                )
+                FilterChip(
+                    selected = voiceMode == VoiceMode.HINDI,
+                    onClick = { voiceManager.setVoiceMode(VoiceMode.HINDI) },
+                    label = { Text("हिंदी", fontSize = 11.sp) }
+                )
+                FilterChip(
+                    selected = voiceMode == VoiceMode.ENGLISH,
+                    onClick = { voiceManager.setVoiceMode(VoiceMode.ENGLISH) },
+                    label = { Text("English", fontSize = 11.sp) }
+                )
+            }
         }
 
-        HorizontalDivider(color = CardBorder, thickness = 0.8.dp)
+        // Active Error / Listening Banner
+        AnimatedVisibility(visible = isListening || isSpeaking || !lastVoiceError.isNullOrEmpty()) {
+            val statusColor = when {
+                isListening -> AlertRed
+                isSpeaking -> GreenPrimary
+                else -> WarningOrange
+            }
+            val statusMsg = when {
+                isListening -> stringResource(R.string.assistant_listening)
+                isSpeaking -> "बोल रहा है… (Speaking)"
+                else -> lastVoiceError ?: ""
+            }
+
+            Surface(
+                color = statusColor.copy(alpha = 0.15f),
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Row(
+                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 6.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Box(
+                        modifier = Modifier
+                            .size(8.dp)
+                            .clip(CircleShape)
+                            .background(statusColor)
+                    )
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text(
+                        text = statusMsg,
+                        color = statusColor,
+                        fontSize = 12.sp,
+                        fontWeight = FontWeight.Bold
+                    )
+                }
+            }
+        }
 
         // Chat Message List
         LazyColumn(
             state = listState,
             modifier = Modifier
                 .weight(1f)
-                .fillMaxWidth()
-                .padding(horizontal = 14.dp, vertical = 8.dp),
-            verticalArrangement = Arrangement.spacedBy(10.dp)
+                .padding(horizontal = 16.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp),
+            contentPadding = PaddingValues(vertical = 12.dp)
         ) {
-            items(messages) { msg ->
+            items(messages) { message ->
                 ChatBubble(
-                    message = msg,
-                    onSpeakClick = { voiceManager.speak(msg.text) }
+                    message = message,
+                    onSpeakClick = {
+                        voiceManager.speak(message.text)
+                    }
                 )
             }
         }
 
-        // Suggestions horizontal row
-        if (messages.size <= 2) {
-            LazyRow(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 14.dp, vertical = 6.dp),
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
-            ) {
-                items(sampleQueries) { q ->
-                    Surface(
-                        modifier = Modifier.clickable { sendMessage(q) },
-                        shape = RoundedCornerShape(16.dp),
-                        color = GreenPrimaryContainer.copy(alpha = 0.6f)
-                    ) {
-                        Text(
-                            text = q,
-                            modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
-                            style = MaterialTheme.typography.labelSmall.copy(
-                                color = GreenDark,
-                                fontSize = 12.sp
-                            )
+        // Sample Query Chips Row
+        LazyRow(
+            modifier = Modifier
+                .fillMaxWidth()
+                .background(Color.White.copy(alpha = 0.8f))
+                .padding(horizontal = 12.dp, vertical = 6.dp),
+            horizontalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            items(sampleQueries) { query ->
+                Surface(
+                    modifier = Modifier.clickable { sendMessage(query) },
+                    shape = RoundedCornerShape(16.dp),
+                    color = Color(0xFFE8F5E9),
+                    border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFFC8E6C9))
+                ) {
+                    Text(
+                        text = query,
+                        modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
+                        style = MaterialTheme.typography.labelSmall.copy(
+                            color = GreenDark,
+                            fontSize = 11.5.sp,
+                            fontWeight = FontWeight.Medium
                         )
-                    }
+                    )
                 }
             }
         }
 
-        // Hold-to-Talk Status Indicator
-        AnimatedVisibility(visible = isListening) {
+        // Image Attachment Preview Bar for Gemini Vision
+        if (attachedBitmap != null) {
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .background(Color(0xFFFFEBEE))
-                    .padding(vertical = 8.dp),
-                horizontalArrangement = Arrangement.Center,
-                verticalAlignment = Alignment.CenterVertically
+                    .background(Color(0xFFEFEFEF))
+                    .padding(horizontal = 16.dp, vertical = 6.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.SpaceBetween
             ) {
-                Icon(
-                    imageVector = Icons.Default.Mic,
-                    contentDescription = null,
-                    tint = AlertRed,
-                    modifier = Modifier.size(18.dp)
-                )
-                Spacer(modifier = Modifier.width(6.dp))
-                Text(
-                    text = stringResource(R.string.assistant_listening),
-                    color = AlertRed,
-                    fontWeight = FontWeight.Bold,
-                    fontSize = 13.sp
-                )
-            }
-        }
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Image(
+                        bitmap = attachedBitmap!!.asImageBitmap(),
+                        contentDescription = "Attached photo",
+                        modifier = Modifier
+                            .size(44.dp)
+                            .clip(RoundedCornerShape(8.dp))
+                    )
+                    Spacer(modifier = Modifier.width(10.dp))
+                    Column {
+                        Text("फसल चित्र संलग्न है (Image Attached)", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = TextPrimary)
+                        Text("Gemini Vision AI से विश्लेषण होगा", fontSize = 10.5.sp, color = TextSecondary)
+                    }
+                }
 
-        // Voice Error / Offline Notice Banner
-        AnimatedVisibility(visible = lastVoiceError != null && !isListening) {
-            lastVoiceError?.let { err ->
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .background(Color(0xFFFFF3E0))
-                        .padding(horizontal = 12.dp, vertical = 6.dp),
-                    horizontalArrangement = Arrangement.Center,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Icon(
-                        imageVector = Icons.Default.Info,
-                        contentDescription = null,
-                        tint = Color(0xFFE65100),
-                        modifier = Modifier.size(16.dp)
-                    )
-                    Spacer(modifier = Modifier.width(6.dp))
-                    Text(
-                        text = err,
-                        color = Color(0xFFE65100),
-                        fontSize = 12.sp
-                    )
+                IconButton(onClick = { attachedBitmap = null }) {
+                    Icon(imageVector = Icons.Default.Close, contentDescription = "Remove photo", tint = AlertRed)
                 }
             }
         }
 
-        // Input Bar
+        // Bottom Input Bar (Attach Image + Text Input + Hold-to-Talk Mic)
         Row(
             modifier = Modifier
                 .fillMaxWidth()
@@ -270,13 +325,29 @@ fun ChatScreen(
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(8.dp)
         ) {
+            // Photo Attachment Button for Gemini Vision AI
+            IconButton(
+                onClick = { galleryLauncher.launch("image/*") },
+                modifier = Modifier
+                    .size(44.dp)
+                    .clip(CircleShape)
+                    .background(Color(0xFFE8F5E9))
+            ) {
+                Icon(
+                    imageVector = Icons.Default.AddPhotoAlternate,
+                    contentDescription = "Attach crop photo",
+                    tint = GreenPrimary,
+                    modifier = Modifier.size(24.dp)
+                )
+            }
+
             OutlinedTextField(
                 value = inputText,
                 onValueChange = { inputText = it },
                 modifier = Modifier.weight(1f),
                 placeholder = {
                     Text(
-                        text = stringResource(R.string.assistant_hint),
+                        text = if (attachedBitmap != null) "चित्र के बारे में प्रश्न पूछें…" else stringResource(R.string.assistant_hint),
                         fontSize = 13.sp,
                         color = TextSecondary
                     )
@@ -289,10 +360,10 @@ fun ChatScreen(
                 maxLines = 3
             )
 
-            // If text typed, show Send button; otherwise Hold-to-Talk Mic button
-            if (inputText.isNotBlank()) {
+            // If text typed or image attached, show Send button; otherwise Hold-to-Talk Mic button
+            if (inputText.isNotBlank() || attachedBitmap != null) {
                 IconButton(
-                    onClick = { sendMessage(inputText) },
+                    onClick = { sendMessage(inputText, attachedBitmap) },
                     modifier = Modifier
                         .size(46.dp)
                         .clip(CircleShape)
@@ -316,7 +387,7 @@ fun ChatScreen(
                             when (event.action) {
                                 MotionEvent.ACTION_DOWN -> {
                                     voiceManager.startListening { query ->
-                                        sendMessage(query)
+                                        sendMessage(query, attachedBitmap)
                                     }
                                     true
                                 }
@@ -330,9 +401,9 @@ fun ChatScreen(
                 ) {
                     Icon(
                         imageVector = Icons.Default.Mic,
-                        contentDescription = stringResource(R.string.assistant_hold_to_talk),
+                        contentDescription = "Hold to Talk",
                         tint = Color.White,
-                        modifier = Modifier.size(26.dp)
+                        modifier = Modifier.size(24.dp)
                     )
                 }
             }
@@ -346,31 +417,45 @@ fun ChatBubble(
     onSpeakClick: () -> Unit
 ) {
     val isUser = message.isUser
-    val bubbleColor = if (isUser) GreenPrimary else Color.White
-    val textColor = if (isUser) Color.White else TextPrimary
-    val align = if (isUser) Alignment.End else Alignment.Start
 
-    Column(
+    Row(
         modifier = Modifier.fillMaxWidth(),
-        horizontalAlignment = align
+        horizontalArrangement = if (isUser) Arrangement.End else Arrangement.Start
     ) {
-        Card(
-            shape = RoundedCornerShape(
-                topStart = 14.dp,
-                topEnd = 14.dp,
-                bottomStart = if (isUser) 14.dp else 2.dp,
-                bottomEnd = if (isUser) 2.dp else 14.dp
-            ),
-            colors = CardDefaults.cardColors(containerColor = bubbleColor),
-            elevation = CardDefaults.cardElevation(1.dp),
-            modifier = Modifier.widthIn(max = 310.dp)
+        Box(
+            modifier = Modifier
+                .widthIn(max = 310.dp)
+                .clip(
+                    RoundedCornerShape(
+                        topStart = 16.dp,
+                        topEnd = 16.dp,
+                        bottomStart = if (isUser) 16.dp else 4.dp,
+                        bottomEnd = if (isUser) 4.dp else 16.dp
+                    )
+                )
+                .background(if (isUser) GreenPrimary else Color.White)
+                .padding(14.dp)
         ) {
-            Column(modifier = Modifier.padding(12.dp)) {
+            Column {
+                // Render attached crop photo inside user message bubble
+                if (message.attachedImageBitmap != null) {
+                    Image(
+                        bitmap = message.attachedImageBitmap.asImageBitmap(),
+                        contentDescription = "Attached crop image",
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(180.dp)
+                            .clip(RoundedCornerShape(12.dp))
+                            .padding(bottom = 8.dp)
+                    )
+                }
+
                 Text(
                     text = message.text,
                     style = MaterialTheme.typography.bodyMedium.copy(
-                        color = textColor,
-                        lineHeight = 22.sp
+                        color = if (isUser) Color.White else TextPrimary,
+                        fontSize = 14.sp,
+                        lineHeight = 20.sp
                     )
                 )
 
@@ -394,7 +479,7 @@ fun ChatBubble(
                             )
                             Spacer(modifier = Modifier.width(3.dp))
                             Text(
-                                text = message.tokenUsage ?: "",
+                                text = message.tokenUsage,
                                 style = MaterialTheme.typography.labelSmall.copy(
                                     fontSize = 9.5.sp,
                                     fontWeight = FontWeight.Bold,
