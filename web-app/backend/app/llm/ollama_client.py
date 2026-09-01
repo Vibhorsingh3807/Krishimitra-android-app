@@ -36,6 +36,15 @@ class OllamaClient:
             }
         return {"status": "unreachable"}
 
+    async def is_available(self) -> bool:
+        """Instant check if Ollama server is up"""
+        try:
+            async with httpx.AsyncClient(timeout=1.0) as client:
+                res = await client.get(f"{self.base_url}/api/tags")
+                return res.status_code == 200
+        except Exception:
+            return False
+
     async def stream_chat(
         self,
         prompt: str,
@@ -45,8 +54,15 @@ class OllamaClient:
     ) -> AsyncGenerator[str, None]:
         """
         Stream tokens from Ollama LLM with grounded RAG context.
-        Falls back smoothly if Ollama is unreachable.
+        Falls back smoothly and instantly if Ollama is unreachable.
         """
+        # If Ollama is not active, immediately stream from Agronomic Expert Agent (zero wait)
+        if not await self.is_available():
+            from app.llm.expert_agent import expert_agent
+            async for token in expert_agent.stream_expert_response(prompt):
+                yield token
+            return
+
         selected_model = model or self.default_model
         
         # Assemble Grounded Agricultural Prompt
@@ -81,10 +97,13 @@ class OllamaClient:
         }
 
         try:
-            async with httpx.AsyncClient(timeout=settings.OLLAMA_TIMEOUT_SECONDS) as client:
+            timeout = httpx.Timeout(timeout=60.0, connect=1.5)
+            async with httpx.AsyncClient(timeout=timeout) as client:
                 async with client.stream("POST", f"{self.base_url}/api/generate", json=payload) as response:
                     if response.status_code != 200:
-                        yield f"Ollama service returned status {response.status_code}. Activating ICAR backup response."
+                        from app.llm.expert_agent import expert_agent
+                        async for token in expert_agent.stream_expert_response(prompt):
+                            yield token
                         return
 
                     async for line in response.aiter_lines():
@@ -98,21 +117,9 @@ class OllamaClient:
                                     break
                             except Exception:
                                 continue
-        except Exception as e:
-            # High quality grounded agronomic fallback
-            yield f"\n[🌾 कृषिमित्र AI परामर्श - ICAR संदर्भ]\n\n"
-            yield f"आपके प्रश्न '{prompt}' के संबंध में कृषि अनुसंधान परिषद (ICAR) का प्रामाणिक परामर्श:\n"
-            if "पानी" in prompt or "सिंचाई" in prompt or "water" in prompt.lower() or "irrigation" in prompt.lower():
-                yield "• गेहूं की फसल में पहली सिंचाई बुवाई के 20-25 दिन बाद 'मुकुट जड़' (CRI stage) पर अनिवार्य है।\n"
-                yield "• पानी की कमी की दशा में हल्की सिंचाई करें और शाम के समय पानी लगाएं।\n"
-            elif "खाद" in prompt or "यूरिया" in prompt or "fertilizer" in prompt.lower():
-                yield "• संतुलित उर्वरक (NPK 120:60:40 किग्रा/हेक्टेयर) का प्रयोग करें।\n"
-                yield "• यूरिया की आधी मात्रा बुवाई के समय और शेष दो बराबर भागों में प्रथम व द्वितीय सिंचाई पर दें।\n"
-            elif "रोग" in prompt or "पीला" in prompt or "rust" in prompt.lower():
-                yield "• पीला रतुआ (Yellow Rust) के लक्षण दिखने पर प्रोपिकोनाजोल 25% EC (टिल्ट) 1 मिली प्रति लीटर पानी में मिलाकर छिड़काव करें।\n"
-            else:
-                yield "• समय पर खरपतवार नियंत्रण (जैसे सल्फोसल्फ्यूरॉन 33 ग्राम/हेक्टेयर) करें।\n"
-                yield "• मौसम के अनुसार सिंचाई का निर्धारण करें और अपनी मिट्टी की जांच अनुसार पोषक तत्व दें।\n"
-            yield f"\n*(नोट: बैकएंड Ollama LLM से पुनः संपर्क का प्रयास जारी है)*"
+        except Exception:
+            from app.llm.expert_agent import expert_agent
+            async for token in expert_agent.stream_expert_response(prompt):
+                yield token
 
 ollama_client = OllamaClient()
