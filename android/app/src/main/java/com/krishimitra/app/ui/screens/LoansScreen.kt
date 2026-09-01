@@ -509,8 +509,7 @@ fun LoansScreen(dbHelper: DatabaseHelper) {
                                     workflowStep = 3
                                 },
                                 onOpenUrl = { url ->
-                                    val intent = Intent(Intent.ACTION_VIEW, Uri.parse(url))
-                                    context.startActivity(intent)
+                                    openExternalWebUrl(context, url)
                                 }
                             )
                         }
@@ -1071,8 +1070,7 @@ fun LoansScreen(dbHelper: DatabaseHelper) {
                         Button(
                             onClick = {
                                 val url = sub?.officialPortalUrl ?: "https://www.myscheme.gov.in/schemes/kcc"
-                                val intent = Intent(Intent.ACTION_VIEW, Uri.parse(url))
-                                context.startActivity(intent)
+                                openExternalWebUrl(context, url)
                             },
                             modifier = Modifier
                                 .fillMaxWidth()
@@ -1220,8 +1218,7 @@ fun LoansScreen(dbHelper: DatabaseHelper) {
 
                                 Button(
                                     onClick = {
-                                        val intent = Intent(Intent.ACTION_VIEW, Uri.parse(app.officialPortalUrl))
-                                        context.startActivity(intent)
+                                        openExternalWebUrl(context, app.officialPortalUrl)
                                     },
                                     modifier = Modifier.fillMaxWidth(),
                                     colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF0288D1)),
@@ -1327,8 +1324,7 @@ fun LoansScreen(dbHelper: DatabaseHelper) {
                                     Spacer(modifier = Modifier.height(6.dp))
                                     Button(
                                         onClick = {
-                                            val intent = Intent(Intent.ACTION_VIEW, Uri.parse(scheme.officialUrl))
-                                            context.startActivity(intent)
+                                            openExternalWebUrl(context, scheme.officialUrl)
                                         },
                                         modifier = Modifier.fillMaxWidth(),
                                         colors = ButtonDefaults.buttonColors(containerColor = GreenPrimary),

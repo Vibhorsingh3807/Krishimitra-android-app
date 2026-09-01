@@ -716,8 +716,7 @@ fun EquipmentRentalScreen(
 
                                     Button(
                                         onClick = {
-                                            val intent = Intent(Intent.ACTION_VIEW, Uri.parse("https://agrimachinery.nic.in/"))
-                                            context.startActivity(intent)
+                                            openExternalWebUrl(context, "https://agrimachinery.nic.in/")
                                         },
                                         modifier = Modifier.fillMaxWidth(),
                                         colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF0277BD)),
