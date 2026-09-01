@@ -141,6 +141,117 @@ class ApiClient(private val context: Context) {
         return@withContext null
     }
 
+    suspend fun fetchOpenMeteoWeather(lat: Double, lon: Double, locName: String? = null): WeatherInfo? = withContext(Dispatchers.IO) {
+        if (!isNetworkAvailable()) return@withContext null
+
+        try {
+            val url = "https://api.open-meteo.com/v1/forecast?latitude=$lat&longitude=$lon&current=temperature_2m,relative_humidity_2m,weather_code,wind_speed_10m&daily=weather_code,temperature_2m_max,temperature_2m_min,precipitation_probability_max&timezone=auto"
+            val request = Request.Builder().url(url).get().build()
+            client.newCall(request).execute().use { resp ->
+                if (resp.isSuccessful) {
+                    val respStr = resp.body?.string() ?: return@withContext null
+                    val json = gson.fromJson(respStr, JsonObject::class.java)
+
+                    val current = json.getAsJsonObject("current")
+                    val daily = json.getAsJsonObject("daily")
+
+                    val temp = current?.get("temperature_2m")?.asFloat ?: 30.0f
+                    val humidity = current?.get("relative_humidity_2m")?.asInt ?: 60
+                    val windSpeed = current?.get("wind_speed_10m")?.asFloat ?: 10.0f
+                    val code = current?.get("weather_code")?.asInt ?: 0
+
+                    val (condEn, condHi) = parseWeatherCode(code)
+
+                    val times = daily?.getAsJsonArray("time")
+                    val maxTemps = daily?.getAsJsonArray("temperature_2m_max")
+                    val minTemps = daily?.getAsJsonArray("temperature_2m_min")
+                    val rainProbs = daily?.getAsJsonArray("precipitation_probability_max")
+                    val dailyCodes = daily?.getAsJsonArray("weather_code")
+
+                    val forecastList = mutableListOf<WeatherDayForecast>()
+                    val dayLabelsHi = listOf("आज", "कल", "परसों", "चौथे दिन", "पांचवें दिन")
+
+                    if (times != null) {
+                        for (i in 0 until minOf(5, times.size())) {
+                            val maxT = maxTemps?.get(i)?.asFloat ?: (temp + 2)
+                            val minT = minTemps?.get(i)?.asFloat ?: (temp - 5)
+                            val rProb = rainProbs?.get(i)?.asInt ?: 10
+                            val dCode = dailyCodes?.get(i)?.asInt ?: 0
+                            val (dCondEn, dCondHi) = parseWeatherCode(dCode)
+                            val label = if (i < dayLabelsHi.size) dayLabelsHi[i] else times.get(i).asString
+
+                            val dayAdvHi = when {
+                                rProb >= 60 -> "वर्षा की प्रबल संभावना। सिंचाई व स्प्रे रोकें।"
+                                rProb >= 35 -> "बादल छाए रहेंगे। वर्षा पर नजर रखकर सिंचाई करें।"
+                                maxT >= 36 -> "भीषण गर्मी। फसलों में पर्याप्त नमी बनाए रखें।"
+                                else -> "सामान्य कृषि कार्य जारी रखें।"
+                            }
+
+                            forecastList.add(
+                                WeatherDayForecast(
+                                    date = label,
+                                    maxTemp = maxT,
+                                    minTemp = minT,
+                                    rainProb = rProb,
+                                    conditionHi = dCondHi,
+                                    advisoryHi = dayAdvHi
+                                )
+                            )
+                        }
+                    }
+
+                    val todayRainProb = if (forecastList.isNotEmpty()) forecastList[0].rainProb else 15
+
+                    val agriAdvisoryEn = when {
+                        todayRainProb >= 60 -> "Rain expected today. Hold irrigation and ensure proper field drainage."
+                        temp >= 35 -> "High heat stress risk. Ensure timely morning/evening irrigation."
+                        humidity >= 70 -> "High humidity favor fungal diseases. Monitor leaves closely."
+                        else -> "Weather favorable for routine field operations, weeding and scheduled irrigation."
+                    }
+
+                    val agriAdvisoryHi = when {
+                        todayRainProb >= 60 -> "आज वर्षा की संभावना है। सिंचाई स्थगित रखें व जल निकासी सुनिश्चित करें।"
+                        temp >= 35 -> "तेज गर्मी की स्थिति। फसल में पानी की कमी न होने दें, सुबह/शाम सिंचाई करें।"
+                        humidity >= 70 -> "हवा में नमी अधिक है। फफूंद व कीट रोग की निगरानी करें।"
+                        else -> "मौसम कृषि कार्यों के अनुकूल है। खेत की तैयारी व सिंचाई हेतु सही समय।"
+                    }
+
+                    val finalLocName = locName ?: "स्थानीय कृषि क्षेत्र"
+
+                    return@withContext WeatherInfo(
+                        location = finalLocName,
+                        temperature = temp,
+                        humidity = humidity,
+                        windSpeed = windSpeed,
+                        rainfallProb = todayRainProb,
+                        condition = condEn,
+                        conditionHi = condHi,
+                        advisoryEn = agriAdvisoryEn,
+                        advisoryHi = agriAdvisoryHi,
+                        forecast = forecastList,
+                        isOffline = false
+                    )
+                }
+            }
+        } catch (e: Exception) {
+            Log.w(TAG, "Open-Meteo direct fetch failed: ${e.message}")
+        }
+        return@withContext null
+    }
+
+    private fun parseWeatherCode(code: Int): Pair<String, String> {
+        return when (code) {
+            0 -> "Clear Sky" to "साफ धूप"
+            1, 2, 3 -> "Partly Cloudy" to "हल्के बादल"
+            45, 48 -> "Foggy" to "कोहरा"
+            51, 53, 55 -> "Drizzle" to "हल्की बूंदाबांदी"
+            61, 63, 65 -> "Rain" to "वर्षा"
+            80, 81, 82 -> "Showers" to "बौछारें"
+            95, 96, 99 -> "Thunderstorm" to "आंधी तूफान"
+            else -> "Partly Sunny" to "सामान्य मौसम"
+        }
+    }
+
     suspend fun fetchWeather(lat: Double, lon: Double, district: String? = null): WeatherInfo? = withContext(Dispatchers.IO) {
         if (!isNetworkAvailable()) return@withContext null
 
@@ -190,8 +301,8 @@ class ApiClient(private val context: Context) {
                 }
             }
         } catch (e: Exception) {
-            Log.w(TAG, "Weather fetch network failed: ${e.message}")
+            Log.w(TAG, "Backend Weather fetch network failed, trying direct Open-Meteo: ${e.message}")
         }
-        return@withContext null
+        return@withContext fetchOpenMeteoWeather(lat, lon, district)
     }
 }
