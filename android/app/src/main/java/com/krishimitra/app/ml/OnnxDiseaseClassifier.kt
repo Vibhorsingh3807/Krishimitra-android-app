@@ -38,17 +38,34 @@ class OnnxDiseaseClassifier(private val context: Context) {
                 context.assets.open(MODEL_NAME).use { it.readBytes() }
             } catch (e: Exception) {
                 Log.w(TAG, "Quantized model not found; loading standard ONNX model: ${e.message}")
-                context.assets.open(FALLBACK_MODEL_NAME).use { it.readBytes() }
+                try {
+                    context.assets.open(FALLBACK_MODEL_NAME).use { it.readBytes() }
+                } catch (e2: Exception) {
+                    Log.e(TAG, "Both quantized and standard ONNX models missing: ${e2.message}")
+                    null
+                }
             }
 
-            val opts = OrtSession.SessionOptions().apply {
-                setIntraOpNumThreads(2)
+            if (modelBytes != null) {
+                val opts = OrtSession.SessionOptions().apply {
+                    setIntraOpNumThreads(2)
+                }
+                ortSession = ortEnv?.createSession(modelBytes, opts)
             }
-            ortSession = ortEnv?.createSession(modelBytes, opts)
 
             // Load disease labels
-            context.assets.open("disease_labels.txt").use { stream ->
-                labels = stream.bufferedReader().readLines().map { it.trim() }.filter { it.isNotEmpty() }
+            labels = try {
+                context.assets.open("disease_labels.txt").use { stream ->
+                    stream.bufferedReader().readLines().map { it.trim() }.filter { it.isNotEmpty() }
+                }
+            } catch (e: Exception) {
+                Log.w(TAG, "disease_labels.txt missing, using default labels: ${e.message}")
+                listOf(
+                    "rice_blast", "rice_brown_spot", "wheat_yellow_rust", "wheat_loose_smut",
+                    "cotton_bacterial_blight", "potato_early_blight", "potato_late_blight",
+                    "tomato_early_blight", "tomato_leaf_mold", "healthy_leaf",
+                    "soil_or_background", "uncertain_quality"
+                )
             }
             Log.i(TAG, "ONNX Disease Classifier initialized with ${labels.size} classes.")
         } catch (e: Exception) {
@@ -56,6 +73,7 @@ class OnnxDiseaseClassifier(private val context: Context) {
         }
     }
 
+    @Synchronized
     fun classifyLeaf(bitmap: Bitmap): DiseaseDiagnosisResult {
         if (ortSession == null || ortEnv == null || labels.isEmpty()) {
             return fallbackDiagnosis(bitmap)
@@ -183,3 +201,6 @@ class OnnxDiseaseClassifier(private val context: Context) {
         }
     }
 }
+
+typealias DiseaseClassifier = OnnxDiseaseClassifier
+
