@@ -84,7 +84,9 @@ class MainActivity : ComponentActivity() {
                     Scaffold(
                         modifier = Modifier.fillMaxSize(),
                         topBar = {
-                            if (currentRoute != Screen.Splash.route) {
+                            if (currentRoute != Screen.Splash.route &&
+                                currentRoute != Screen.FieldTwin.route &&
+                                currentRoute != Screen.AddField.route) {
                                 KrishiTopBar(
                                     title = title,
                                     isOnline = isOnline,

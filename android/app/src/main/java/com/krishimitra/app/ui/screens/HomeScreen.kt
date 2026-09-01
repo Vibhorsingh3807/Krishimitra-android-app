@@ -42,6 +42,14 @@ fun HomeScreen(
 ) {
     val serviceItems = listOf(
         ServiceGridItem(
+            R.string.action_field_twin,
+            R.string.action_field_twin_desc,
+            Icons.Default.Landscape,
+            Color(0xFFE8F5E9),
+            Color(0xFF2E7D32),
+            Screen.FieldTwin.route
+        ),
+        ServiceGridItem(
             R.string.action_schemes,
             R.string.action_schemes_desc,
             Icons.Default.AccountBalance,
@@ -302,6 +310,89 @@ fun HomeScreen(
                                     fontWeight = FontWeight.Bold
                                 )
                             }
+                        }
+                    }
+                }
+            }
+        }
+
+        // 2C. FIELD DIGITAL TWIN HERO CARD (SIH FEATURE)
+        item(span = { GridItemSpan(2) }) {
+            Card(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clickable { onNavigate(Screen.FieldTwin.route) },
+                shape = RoundedCornerShape(18.dp),
+                colors = CardDefaults.cardColors(containerColor = Color.Transparent),
+                elevation = CardDefaults.cardElevation(2.dp)
+            ) {
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .background(
+                            Brush.linearGradient(
+                                colors = listOf(
+                                    Color(0xFF1B5E20),
+                                    Color(0xFF2E7D32)
+                                )
+                            )
+                        )
+                        .padding(16.dp)
+                ) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.SpaceBetween
+                    ) {
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            modifier = Modifier.weight(1f)
+                        ) {
+                            Box(
+                                modifier = Modifier
+                                    .size(46.dp)
+                                    .clip(CircleShape)
+                                    .background(Color.White.copy(alpha = 0.2f)),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.Landscape,
+                                    contentDescription = null,
+                                    tint = Color.White,
+                                    modifier = Modifier.size(26.dp)
+                                )
+                            }
+                            Spacer(modifier = Modifier.width(14.dp))
+                            Column {
+                                Text(
+                                    text = stringResource(R.string.action_field_twin),
+                                    style = MaterialTheme.typography.titleMedium.copy(
+                                        color = Color.White,
+                                        fontWeight = FontWeight.Bold,
+                                        fontSize = 15.5.sp
+                                    )
+                                )
+                                Text(
+                                    text = stringResource(R.string.action_field_twin_desc),
+                                    style = MaterialTheme.typography.bodySmall.copy(
+                                        color = Color(0xFFA5D6A7),
+                                        fontSize = 12.sp
+                                    )
+                                )
+                            }
+                        }
+
+                        Surface(
+                            shape = RoundedCornerShape(16.dp),
+                            color = Color.White
+                        ) {
+                            Text(
+                                text = "खोलें →",
+                                color = GreenDark,
+                                fontSize = 12.sp,
+                                fontWeight = FontWeight.Bold,
+                                modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp)
+                            )
                         }
                     }
                 }

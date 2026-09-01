@@ -97,6 +97,8 @@
     <string name="action_roi_desc">Calculate cultivation costs, profit/loss &amp; break-even</string>
     <string name="action_equipment_rental">Farm Equipment Rental</string>
     <string name="action_equipment_rental_desc">Rent tractors, harvesters &amp; machines nearby</string>
+    <string name="action_field_twin">Field Digital Twin</string>
+    <string name="action_field_twin_desc">Zone-wise moisture, NDVI &amp; living field state</string>
 
     <string name="roi_title">Crop Investment &amp; ROI Calculator</string>
     <!-- Common -->

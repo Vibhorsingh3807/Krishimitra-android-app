@@ -95,6 +95,8 @@
     <string name="action_roi_desc">खेती की लागत, मुनाफा/घाटा व ब्रेक-इवन मूल्य की गणना</string>
     <string name="action_equipment_rental">कृषि यंत्र किराया केंद्र</string>
     <string name="action_equipment_rental_desc">ट्रैक्टर, रोटावेटर व मशीनें किराए पर लें या दें</string>
+    <string name="action_field_twin">मेरा डिजिटल खेत</string>
+    <string name="action_field_twin_desc">ज़ोन-वार खेत स्वास्थ्य, नमी व उपग्रह निगरानी</string>
 
     <string name="roi_title">फसल निवेश व लाभ कैलकुलेटर</string>
     <!-- Common -->

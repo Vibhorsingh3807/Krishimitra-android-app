@@ -1,5 +1,5 @@
 from fastapi import APIRouter
-from backend.app.api.v1 import health, crops, diseases, schemes, loans, weather, ai, sync, telephony, market
+from backend.app.api.v1 import health, crops, diseases, schemes, loans, weather, ai, sync, telephony, market, fields
 
 api_router = APIRouter()
 
@@ -13,4 +13,5 @@ api_router.include_router(ai.router, prefix="/ai", tags=["AI Assistant"])
 api_router.include_router(sync.router, prefix="/sync", tags=["Sync"])
 api_router.include_router(telephony.router, prefix="/telephony", tags=["Telephony"])
 api_router.include_router(market.router, prefix="/market-prices", tags=["Market Prices"])
+api_router.include_router(fields.router, prefix="/fields", tags=["Field Digital Twin"])
 

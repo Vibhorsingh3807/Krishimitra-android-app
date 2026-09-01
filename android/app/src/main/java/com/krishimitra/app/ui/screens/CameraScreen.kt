@@ -19,6 +19,7 @@ import androidx.camera.lifecycle.ProcessCameraProvider
 import androidx.camera.view.PreviewView
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
@@ -547,21 +548,88 @@ fun CameraScreen(
                     HorizontalDivider(color = Color(0xFFEEEEEE), thickness = 0.8.dp)
                     Spacer(modifier = Modifier.height(8.dp))
 
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Icon(
-                            imageVector = Icons.Default.Verified,
-                            contentDescription = null,
-                            tint = GreenPrimary,
-                            modifier = Modifier.size(14.dp)
-                        )
-                        Spacer(modifier = Modifier.width(6.dp))
-                        Text(
-                            text = "स्रोत: ${result.source}",
-                            style = MaterialTheme.typography.labelSmall.copy(
-                                color = TextSecondary,
-                                fontSize = 11.sp
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Icon(
+                                imageVector = Icons.Default.Verified,
+                                contentDescription = null,
+                                tint = GreenPrimary,
+                                modifier = Modifier.size(14.dp)
                             )
-                        )
+                            Spacer(modifier = Modifier.width(6.dp))
+                            Text(
+                                text = "स्रोत: ${result.source}",
+                                style = MaterialTheme.typography.labelSmall.copy(
+                                    color = TextSecondary,
+                                    fontSize = 11.sp
+                                )
+                            )
+                        }
+
+                        // Assign to Field Twin Zone Button
+                        var showZonePicker by remember { mutableStateOf(false) }
+                        val twinRepo = remember { com.krishimitra.app.data.repository.FieldDigitalTwinRepository(context) }
+                        val defaultField = remember { twinRepo.getFields().firstOrNull() }
+
+                        OutlinedButton(
+                            onClick = { showZonePicker = true },
+                            shape = RoundedCornerShape(8.dp),
+                            contentPadding = PaddingValues(horizontal = 10.dp, vertical = 4.dp)
+                        ) {
+                            Text("🌾 ज़ोन से जोड़ें", fontSize = 11.5.sp, color = GreenPrimary, fontWeight = FontWeight.Bold)
+                        }
+
+                        if (showZonePicker && defaultField != null) {
+                            val zones = remember { twinRepo.getZones(defaultField.id) }
+                            AlertDialog(
+                                onDismissRequest = { showZonePicker = false },
+                                title = { Text("खेत ज़ोन से जोड़ें (Field Twin)", fontWeight = FontWeight.Bold) },
+                                text = {
+                                    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                                        Text("यह पत्ती रोग स्कैन किस ज़ोन से संबंधित है?", fontSize = 13.sp)
+                                        zones.take(9).forEach { z ->
+                                            Surface(
+                                                modifier = Modifier
+                                                    .fillMaxWidth()
+                                                    .clickable {
+                                                        twinRepo.recordCameraObservation(
+                                                            fieldId = defaultField.id,
+                                                            zoneId = z.id,
+                                                            diseaseName = result.diseaseNameHi,
+                                                            confidence = result.confidence
+                                                        )
+                                                        android.widget.Toast.makeText(
+                                                            context,
+                                                            "✓ स्कैन ${z.zoneLabelHi} से जोड़ा गया! डिजिटल ट्विन अपडेट हुआ।",
+                                                            android.widget.Toast.LENGTH_LONG
+                                                        ).show()
+                                                        showZonePicker = false
+                                                    },
+                                                shape = RoundedCornerShape(8.dp),
+                                                color = Color(0xFFF1F8E9)
+                                            ) {
+                                                Text(
+                                                    text = "${z.zoneLabelHi} (${z.id}) • ${z.cropHi}",
+                                                    modifier = Modifier.padding(10.dp),
+                                                    fontSize = 12.sp,
+                                                    fontWeight = FontWeight.SemiBold
+                                                )
+                                            }
+                                        }
+                                    }
+                                },
+                                confirmButton = {},
+                                dismissButton = {
+                                    TextButton(onClick = { showZonePicker = false }) {
+                                        Text("रद्द करें")
+                                    }
+                                }
+                            )
+                        }
                     }
                 }
             }

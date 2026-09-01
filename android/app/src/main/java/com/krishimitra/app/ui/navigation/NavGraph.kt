@@ -74,6 +74,21 @@ fun KrishiNavGraph(
         composable(Screen.EquipmentRental.route) {
             EquipmentRentalScreen(onBack = { navController.popBackStack() })
         }
+        composable(Screen.FieldTwin.route) {
+            FieldTwinScreen(
+                onNavigateBack = { navController.popBackStack() },
+                onNavigateToAddField = { navController.navigate(Screen.AddField.route) },
+                onOpenAssistantForZone = { prompt ->
+                    navController.navigate(Screen.Chat.route)
+                }
+            )
+        }
+        composable(Screen.AddField.route) {
+            AddFieldScreen(
+                onFieldCreated = { navController.popBackStack() },
+                onNavigateBack = { navController.popBackStack() }
+            )
+        }
     }
 }
 
