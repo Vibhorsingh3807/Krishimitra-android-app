@@ -18,10 +18,14 @@
     <string name="status_synced">प्रमाणित कृषि डेटा अपडेटेड है</string>
 
     <!-- Home Screen -->
-    <string name="home_welcome">नमस्ते, किसान भाई</string>
-    <string name="home_quick_actions">प्रमुख कृषि सुविधाएं</string>
+    <string name="home_welcome">स्वागत है, किसान मित्र</string>
+    <string name="home_greeting">नमस्ते, किसान मित्र 👋</string>
+    <string name="home_subtitle">आज अपनी खेती में क्या सहायता चाहिए?</string>
+    <string name="action_talk_voice">बोलकर प्रश्न पूछें</string>
+    <string name="action_talk_voice_desc">माइक दबाकर अपनी भाषा में पूछें</string>
+    <string name="home_quick_actions">कृषि सेवाएं व टूल</string>
     <string name="action_ask_ai">कृषि एआई से पूछें</string>
-    <string name="action_ask_ai_desc">मिट्टी, फसल, खाद, बीज व रोग पर तुरंत उत्तर पाएं</string>
+    <string name="action_ask_ai_desc">फसल, कीट, बीमारी, मिट्टी व खाद के तुरंत समाधान</string>
     <string name="action_scan_leaf">पत्ती रोग जांचें</string>
     <string name="action_scan_leaf_desc">कैमरे से बिना इंटरनेट रोग पहचान व उपचार</string>
     <string name="action_weather">मौसम एवं कृषि सलाह</string>

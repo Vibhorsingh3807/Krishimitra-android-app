@@ -4,8 +4,10 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.grid.GridCells
+import androidx.compose.foundation.lazy.grid.GridItemSpan
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
@@ -25,11 +27,12 @@ import com.krishimitra.app.R
 import com.krishimitra.app.ui.navigation.Screen
 import com.krishimitra.app.ui.theme.*
 
-data class ActionCardItem(
+data class ServiceGridItem(
     val titleRes: Int,
     val descRes: Int,
     val icon: ImageVector,
-    val primaryColor: Color,
+    val iconBgColor: Color,
+    val iconColor: Color,
     val route: String
 )
 
@@ -37,201 +40,413 @@ data class ActionCardItem(
 fun HomeScreen(
     onNavigate: (String) -> Unit
 ) {
-    val actionItems = listOf(
-        ActionCardItem(
-            R.string.action_ask_ai,
-            R.string.action_ask_ai_desc,
-            Icons.Default.Chat,
-            GreenPrimary,
-            Screen.Chat.route
-        ),
-        ActionCardItem(
-            R.string.action_scan_leaf,
-            R.string.action_scan_leaf_desc,
-            Icons.Default.PhotoCamera,
-            AmberSecondary,
-            Screen.Camera.route
-        ),
-        ActionCardItem(
-            R.string.action_weather,
-            R.string.action_weather_desc,
-            Icons.Default.Cloud,
-            Color(0xFF0288D1),
-            Screen.Weather.route
-        ),
-        ActionCardItem(
+    val serviceItems = listOf(
+        ServiceGridItem(
             R.string.action_schemes,
             R.string.action_schemes_desc,
             Icons.Default.AccountBalance,
+            Color(0xFFEDE7F6),
             Color(0xFF6A1B9A),
             Screen.Schemes.route
         ),
-        ActionCardItem(
+        ServiceGridItem(
             R.string.action_loans,
             R.string.action_loans_desc,
             Icons.Default.Payments,
+            Color(0xE6E8F5E9),
             Color(0xFF2E7D32),
             Screen.Loans.route
         ),
-        ActionCardItem(
-            R.string.action_mandi,
-            R.string.action_mandi_desc,
-            Icons.Default.TrendingUp,
-            Color(0xFFE65100),
-            Screen.Mandi.route
-        ),
-        ActionCardItem(
+        ServiceGridItem(
             R.string.action_crops,
             R.string.action_crops_desc,
             Icons.Default.Grass,
+            Color(0xFFE0F2F1),
             Color(0xFF00695C),
             Screen.CropGuide.route
         ),
-        ActionCardItem(
+        ServiceGridItem(
+            R.string.action_mandi,
+            R.string.action_mandi_desc,
+            Icons.Default.TrendingUp,
+            Color(0xFFFFF3E0),
+            Color(0xFFE65100),
+            Screen.Mandi.route
+        ),
+        ServiceGridItem(
             R.string.action_roi,
             R.string.action_roi_desc,
             Icons.Default.Calculate,
+            Color(0xFFFBE9E7),
             Color(0xFFD84315),
             Screen.RoiCalculator.route
         )
     )
 
-
-    Column(
+    LazyVerticalGrid(
+        columns = GridCells.Fixed(2),
+        horizontalArrangement = Arrangement.spacedBy(14.dp),
+        verticalArrangement = Arrangement.spacedBy(14.dp),
         modifier = Modifier
             .fillMaxSize()
             .background(BackgroundLight)
             .padding(16.dp)
     ) {
-        // Welcome Banner Card
-        Card(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(bottom = 16.dp),
-            shape = RoundedCornerShape(16.dp),
-            elevation = CardDefaults.cardElevation(4.dp)
-        ) {
-            Box(
+        // 1. Header & Greeting
+        item(span = { GridItemSpan(2) }) {
+            Column(modifier = Modifier.padding(bottom = 4.dp)) {
+                Text(
+                    text = stringResource(R.string.home_greeting),
+                    style = MaterialTheme.typography.headlineMedium.copy(
+                        fontWeight = FontWeight.Bold,
+                        color = TextPrimary,
+                        fontSize = 24.sp
+                    )
+                )
+                Spacer(modifier = Modifier.height(2.dp))
+                Text(
+                    text = stringResource(R.string.home_subtitle),
+                    style = MaterialTheme.typography.bodyMedium.copy(
+                        color = TextSecondary,
+                        fontSize = 14.sp
+                    )
+                )
+            }
+        }
+
+        // 2. HERO AI ASSISTANT BANNER
+        item(span = { GridItemSpan(2) }) {
+            Card(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .background(
-                        Brush.horizontalGradient(
-                            listOf(GreenPrimary, Color(0xFF2E7D32))
-                        )
-                    )
-                    .padding(20.dp)
+                    .clickable { onNavigate(Screen.Chat.route) },
+                shape = RoundedCornerShape(20.dp),
+                colors = CardDefaults.cardColors(containerColor = Color.Transparent),
+                elevation = CardDefaults.cardElevation(3.dp)
             ) {
-                Column {
-                    Text(
-                        text = stringResource(R.string.home_welcome),
-                        style = MaterialTheme.typography.headlineMedium.copy(
-                            color = Color.White,
-                            fontWeight = FontWeight.Bold
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .background(
+                            Brush.linearGradient(
+                                colors = listOf(
+                                    Color(0xFF1B5E20),
+                                    Color(0xFF2E7D32)
+                                )
+                            )
                         )
-                    )
-                    Spacer(modifier = Modifier.height(6.dp))
-                    Text(
-                        text = stringResource(R.string.tagline),
-                        style = MaterialTheme.typography.bodyMedium.copy(
-                            color = Color(0xFFE8F5E9),
-                            fontSize = 14.sp
-                        )
-                    )
-                    Spacer(modifier = Modifier.height(12.dp))
-                    // Season Tag
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(6.dp),
-                        modifier = Modifier
-                            .clip(RoundedCornerShape(8.dp))
-                            .background(Color(0x33FFFFFF))
-                            .padding(horizontal = 10.dp, vertical = 4.dp)
-                    ) {
-                        Icon(
-                            imageVector = Icons.Default.CalendarMonth,
-                            contentDescription = null,
-                            tint = Color(0xFFFFE082),
-                            modifier = Modifier.size(16.dp)
-                        )
+                        .padding(20.dp)
+                ) {
+                    Column {
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Box(
+                                    modifier = Modifier
+                                        .size(42.dp)
+                                        .clip(CircleShape)
+                                        .background(Color.White.copy(alpha = 0.2f)),
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    Icon(
+                                        imageVector = Icons.Default.SmartToy,
+                                        contentDescription = null,
+                                        tint = Color.White,
+                                        modifier = Modifier.size(24.dp)
+                                    )
+                                }
+                                Spacer(modifier = Modifier.width(12.dp))
+                                Column {
+                                    Text(
+                                        text = stringResource(R.string.action_ask_ai),
+                                        style = MaterialTheme.typography.titleLarge.copy(
+                                            color = Color.White,
+                                            fontWeight = FontWeight.Bold,
+                                            fontSize = 18.sp
+                                        )
+                                    )
+                                    Text(
+                                        text = "Online / Local AI Active",
+                                        color = Color(0xFFA5D6A7),
+                                        fontSize = 11.sp,
+                                        fontWeight = FontWeight.Medium
+                                    )
+                                }
+                            }
+
+                            Surface(
+                                shape = RoundedCornerShape(20.dp),
+                                color = Color.White
+                            ) {
+                                Text(
+                                    text = "Ask AI →",
+                                    color = GreenPrimary,
+                                    fontSize = 12.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp)
+                                )
+                            }
+                        }
+
+                        Spacer(modifier = Modifier.height(14.dp))
+
                         Text(
-                            text = "रबी व जायद कृषि सत्र 2026",
-                            color = Color.White,
-                            fontSize = 12.sp,
-                            fontWeight = FontWeight.Medium
+                            text = stringResource(R.string.action_ask_ai_desc),
+                            style = MaterialTheme.typography.bodyMedium.copy(
+                                color = Color(0xFFE8F5E9),
+                                fontSize = 13.5.sp,
+                                lineHeight = 18.sp
+                            )
                         )
                     }
                 }
             }
         }
 
-        // Section Title
-        Text(
-            text = stringResource(R.string.home_quick_actions),
-            style = MaterialTheme.typography.titleLarge.copy(
-                fontWeight = FontWeight.Bold,
-                color = TextPrimary
-            ),
-            modifier = Modifier.padding(bottom = 12.dp)
-        )
+        // 3. VOICE & SCAN HERO SHORTCUT CARDS
+        item {
+            Card(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(130.dp)
+                    .clickable { onNavigate(Screen.Chat.route) },
+                shape = RoundedCornerShape(16.dp),
+                colors = CardDefaults.cardColors(containerColor = Color.White),
+                elevation = CardDefaults.cardElevation(2.dp)
+            ) {
+                Column(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(16.dp),
+                    verticalArrangement = Arrangement.SpaceBetween
+                ) {
+                    Box(
+                        modifier = Modifier
+                            .size(40.dp)
+                            .clip(CircleShape)
+                            .background(Color(0xFFFFF3E0)),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Mic,
+                            contentDescription = null,
+                            tint = Color(0xFFE65100),
+                            modifier = Modifier.size(22.dp)
+                        )
+                    }
 
-        // Action Grid
-        LazyVerticalGrid(
-            columns = GridCells.Fixed(2),
-            horizontalArrangement = Arrangement.spacedBy(12.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp),
-            modifier = Modifier.fillMaxSize()
-        ) {
-            items(actionItems) { item ->
-                Card(
+                    Column {
+                        Text(
+                            text = stringResource(R.string.action_talk_voice),
+                            style = MaterialTheme.typography.titleMedium.copy(
+                                fontWeight = FontWeight.Bold,
+                                fontSize = 14.sp,
+                                color = TextPrimary
+                            ),
+                            maxLines = 1
+                        )
+                        Spacer(modifier = Modifier.height(2.dp))
+                        Text(
+                            text = stringResource(R.string.action_talk_voice_desc),
+                            style = MaterialTheme.typography.bodySmall.copy(
+                                fontSize = 11.sp,
+                                color = TextSecondary
+                            ),
+                            maxLines = 2
+                        )
+                    }
+                }
+            }
+        }
+
+        item {
+            Card(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(130.dp)
+                    .clickable { onNavigate(Screen.Camera.route) },
+                shape = RoundedCornerShape(16.dp),
+                colors = CardDefaults.cardColors(containerColor = Color.White),
+                elevation = CardDefaults.cardElevation(2.dp)
+            ) {
+                Column(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(16.dp),
+                    verticalArrangement = Arrangement.SpaceBetween
+                ) {
+                    Box(
+                        modifier = Modifier
+                            .size(40.dp)
+                            .clip(CircleShape)
+                            .background(Color(0xFFE8F5E9)),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.PhotoCamera,
+                            contentDescription = null,
+                            tint = GreenPrimary,
+                            modifier = Modifier.size(22.dp)
+                        )
+                    }
+
+                    Column {
+                        Text(
+                            text = stringResource(R.string.action_scan_leaf),
+                            style = MaterialTheme.typography.titleMedium.copy(
+                                fontWeight = FontWeight.Bold,
+                                fontSize = 14.sp,
+                                color = TextPrimary
+                            ),
+                            maxLines = 1
+                        )
+                        Spacer(modifier = Modifier.height(2.dp))
+                        Text(
+                            text = stringResource(R.string.action_scan_leaf_desc),
+                            style = MaterialTheme.typography.bodySmall.copy(
+                                fontSize = 11.sp,
+                                color = TextSecondary
+                            ),
+                            maxLines = 2
+                        )
+                    }
+                }
+            }
+        }
+
+        // 4. GLANCEABLE WEATHER CARD
+        item(span = { GridItemSpan(2) }) {
+            Card(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clickable { onNavigate(Screen.Weather.route) },
+                shape = RoundedCornerShape(16.dp),
+                colors = CardDefaults.cardColors(containerColor = Color(0xFFE1F5FE)),
+                elevation = CardDefaults.cardElevation(1.dp)
+            ) {
+                Row(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .height(160.dp)
-                        .clickable { onNavigate(item.route) },
-                    shape = RoundedCornerShape(14.dp),
-                    colors = CardDefaults.cardColors(containerColor = Color.White),
-                    elevation = CardDefaults.cardElevation(2.dp)
+                        .padding(16.dp),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Column(
-                        modifier = Modifier
-                            .fillMaxSize()
-                            .padding(14.dp),
-                        verticalArrangement = Arrangement.SpaceBetween
-                    ) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
                         Box(
                             modifier = Modifier
                                 .size(44.dp)
-                                .clip(RoundedCornerShape(10.dp))
-                                .background(item.primaryColor.copy(alpha = 0.12f)),
+                                .clip(CircleShape)
+                                .background(Color(0xFF0288D1).copy(alpha = 0.15f)),
                             contentAlignment = Alignment.Center
                         ) {
                             Icon(
-                                imageVector = item.icon,
+                                imageVector = Icons.Default.WbSunny,
                                 contentDescription = null,
-                                tint = item.primaryColor,
+                                tint = Color(0xFF0288D1),
                                 modifier = Modifier.size(26.dp)
                             )
                         }
-
+                        Spacer(modifier = Modifier.width(14.dp))
                         Column {
-                            Text(
-                                text = stringResource(item.titleRes),
-                                style = MaterialTheme.typography.titleMedium.copy(
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Text(
+                                    text = "32°C",
+                                    fontSize = 20.sp,
                                     fontWeight = FontWeight.Bold,
-                                    fontSize = 15.sp,
                                     color = TextPrimary
-                                ),
-                                maxLines = 1
-                            )
-                            Spacer(modifier = Modifier.height(4.dp))
+                                )
+                                Spacer(modifier = Modifier.width(8.dp))
+                                Text(
+                                    text = "•  दिल्ली / उत्तर भारत",
+                                    fontSize = 12.sp,
+                                    color = TextSecondary,
+                                    fontWeight = FontWeight.Medium
+                                )
+                            }
                             Text(
-                                text = stringResource(item.descRes),
-                                style = MaterialTheme.typography.bodySmall.copy(
-                                    fontSize = 11.sp,
-                                    color = TextSecondary
-                                ),
-                                maxLines = 2
+                                text = "आज वर्षा की संभावना कम है (10% बारिश)",
+                                fontSize = 12.sp,
+                                color = TextSecondary
                             )
                         }
+                    }
+
+                    Icon(
+                        imageVector = Icons.Default.ChevronRight,
+                        contentDescription = null,
+                        tint = Color(0xFF0288D1)
+                    )
+                }
+            }
+        }
+
+        // 5. SERVICES SECTION HEADER
+        item(span = { GridItemSpan(2) }) {
+            Text(
+                text = stringResource(R.string.home_quick_actions),
+                style = MaterialTheme.typography.titleMedium.copy(
+                    fontWeight = FontWeight.Bold,
+                    color = TextPrimary,
+                    fontSize = 17.sp
+                ),
+                modifier = Modifier.padding(top = 6.dp)
+            )
+        }
+
+        // 6. SERVICES GRID ITEMS
+        items(serviceItems) { item ->
+            Card(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(130.dp)
+                    .clickable { onNavigate(item.route) },
+                shape = RoundedCornerShape(16.dp),
+                colors = CardDefaults.cardColors(containerColor = Color.White),
+                elevation = CardDefaults.cardElevation(2.dp)
+            ) {
+                Column(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(14.dp),
+                    verticalArrangement = Arrangement.SpaceBetween
+                ) {
+                    Box(
+                        modifier = Modifier
+                            .size(38.dp)
+                            .clip(CircleShape)
+                            .background(item.iconBgColor),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Icon(
+                            imageVector = item.icon,
+                            contentDescription = null,
+                            tint = item.iconColor,
+                            modifier = Modifier.size(20.dp)
+                        )
+                    }
+
+                    Column {
+                        Text(
+                            text = stringResource(item.titleRes),
+                            style = MaterialTheme.typography.titleMedium.copy(
+                                fontWeight = FontWeight.Bold,
+                                fontSize = 13.5.sp,
+                                color = TextPrimary
+                            ),
+                            maxLines = 1
+                        )
+                        Spacer(modifier = Modifier.height(2.dp))
+                        Text(
+                            text = stringResource(item.descRes),
+                            style = MaterialTheme.typography.bodySmall.copy(
+                                fontSize = 10.5.sp,
+                                color = TextSecondary
+                            ),
+                            maxLines = 2
+                        )
                     }
                 }
             }

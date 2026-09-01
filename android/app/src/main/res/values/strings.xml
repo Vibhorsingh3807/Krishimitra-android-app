@@ -18,7 +18,11 @@
 
     <!-- Home Screen -->
     <string name="home_welcome">Welcome, Farmer Friend</string>
-    <string name="home_quick_actions">Quick Farming Tools</string>
+    <string name="home_greeting">Hello, Farmer Friend 👋</string>
+    <string name="home_subtitle">How can we help with your farming today?</string>
+    <string name="action_talk_voice">Talk to Assistant</string>
+    <string name="action_talk_voice_desc">Hold mic button &amp; speak in your language</string>
+    <string name="home_quick_actions">Farming Tools &amp; Services</string>
     <string name="action_ask_ai">Ask Agriculture AI</string>
     <string name="action_ask_ai_desc">Instant answers on soil, crops, seeds, fertilizer</string>
     <string name="action_scan_leaf">Scan Diseased Leaf</string>

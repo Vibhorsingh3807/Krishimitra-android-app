@@ -84,29 +84,33 @@ class MainActivity : ComponentActivity() {
                     Scaffold(
                         modifier = Modifier.fillMaxSize(),
                         topBar = {
-                            KrishiTopBar(
-                                title = title,
-                                isOnline = isOnline,
-                                currentLanguage = currentLang,
-                                onLanguageToggle = { app.languageManager.toggleLanguage() },
-                                showBack = showBack,
-                                onBackClick = { navController.popBackStack() },
-                                onSourcesClick = { navController.navigate(Screen.Sources.route) }
-                            )
+                            if (currentRoute != Screen.Splash.route) {
+                                KrishiTopBar(
+                                    title = title,
+                                    isOnline = isOnline,
+                                    currentLanguage = currentLang,
+                                    onLanguageToggle = { app.languageManager.toggleLanguage() },
+                                    showBack = showBack,
+                                    onBackClick = { navController.popBackStack() },
+                                    onSourcesClick = { navController.navigate(Screen.Sources.route) }
+                                )
+                            }
                         },
                         bottomBar = {
-                            KrishiBottomNav(
-                                currentRoute = currentRoute,
-                                onNavigate = { route ->
-                                    if (currentRoute != route) {
-                                        navController.navigate(route) {
-                                            popUpTo(Screen.Home.route) { saveState = true }
-                                            launchSingleTop = true
-                                            restoreState = true
+                            if (currentRoute != Screen.Splash.route) {
+                                KrishiBottomNav(
+                                    currentRoute = currentRoute,
+                                    onNavigate = { route ->
+                                        if (currentRoute != route) {
+                                            navController.navigate(route) {
+                                                popUpTo(Screen.Home.route) { saveState = true }
+                                                launchSingleTop = true
+                                                restoreState = true
+                                            }
                                         }
                                     }
-                                }
-                            )
+                                )
+                            }
                         }
                     ) { innerPadding ->
                         KrishiNavGraph(
