@@ -80,6 +80,14 @@ fun HomeScreen(
             Color(0xFFFBE9E7),
             Color(0xFFD84315),
             Screen.RoiCalculator.route
+        ),
+        ServiceGridItem(
+            R.string.action_equipment_rental,
+            R.string.action_equipment_rental_desc,
+            Icons.Default.Agriculture,
+            Color(0xFFE1F5FE),
+            Color(0xFF0277BD),
+            Screen.EquipmentRental.route
         )
     )
 
@@ -201,6 +209,100 @@ fun HomeScreen(
                                 lineHeight = 18.sp
                             )
                         )
+                    }
+                }
+            }
+        }
+
+        // 2B. AI KISAN HELPLINE CARD (CONNECTS TO RENDER CLOUD CALL HELPLINE)
+        item(span = { GridItemSpan(2) }) {
+            Card(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clickable { onNavigate(Screen.Helpline.route) },
+                shape = RoundedCornerShape(18.dp),
+                colors = CardDefaults.cardColors(containerColor = Color.Transparent),
+                elevation = CardDefaults.cardElevation(2.dp)
+            ) {
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .background(
+                            Brush.linearGradient(
+                                colors = listOf(
+                                    Color(0xFF0D47A1),
+                                    Color(0xFF1976D2)
+                                )
+                            )
+                        )
+                        .padding(16.dp)
+                ) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.SpaceBetween
+                    ) {
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            modifier = Modifier.weight(1f)
+                        ) {
+                            Box(
+                                modifier = Modifier
+                                    .size(44.dp)
+                                    .clip(CircleShape)
+                                    .background(Color.White.copy(alpha = 0.2f)),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.PhoneInTalk,
+                                    contentDescription = null,
+                                    tint = Color.White,
+                                    modifier = Modifier.size(24.dp)
+                                )
+                            }
+                            Spacer(modifier = Modifier.width(12.dp))
+                            Column {
+                                Text(
+                                    text = stringResource(R.string.helpline_title),
+                                    style = MaterialTheme.typography.titleMedium.copy(
+                                        fontWeight = FontWeight.Bold,
+                                        color = Color.White,
+                                        fontSize = 15.sp
+                                    )
+                                )
+                                Text(
+                                    text = stringResource(R.string.helpline_subtitle),
+                                    style = MaterialTheme.typography.bodySmall.copy(
+                                        color = Color(0xFFBBDEFB),
+                                        fontSize = 12.sp
+                                    )
+                                )
+                            }
+                        }
+
+                        Surface(
+                            shape = RoundedCornerShape(16.dp),
+                            color = Color(0xFF4CAF50)
+                        ) {
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp)
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.Call,
+                                    contentDescription = null,
+                                    tint = Color.White,
+                                    modifier = Modifier.size(14.dp)
+                                )
+                                Spacer(modifier = Modifier.width(4.dp))
+                                Text(
+                                    text = stringResource(R.string.helpline_call_now),
+                                    color = Color.White,
+                                    fontSize = 12.sp,
+                                    fontWeight = FontWeight.Bold
+                                )
+                            }
+                        }
                     }
                 }
             }

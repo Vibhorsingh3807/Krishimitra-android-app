@@ -15,5 +15,7 @@ sealed class Screen(val route: String) {
         fun createRoute(cropId: String) = "crop_detail/$cropId"
     }
     object Sources : Screen("sources")
+    object Helpline : Screen("helpline")
+    object EquipmentRental : Screen("equipment_rental")
 }
 

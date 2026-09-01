@@ -8,9 +8,6 @@ import androidx.compose.animation.shrinkVertically
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.LazyRow
-import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -25,16 +22,15 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.google.gson.Gson
 import com.google.gson.reflect.TypeToken
-import com.krishimitra.app.R
 import com.krishimitra.app.data.local.DatabaseHelper
+import com.krishimitra.app.domain.language.AppLanguage
+import com.krishimitra.app.domain.language.LanguageManager
 import com.krishimitra.app.domain.model.Crop
 import com.krishimitra.app.ui.theme.*
 import java.text.DecimalFormat
@@ -59,6 +55,9 @@ fun RoiCalculatorScreen(
     dbHelper: DatabaseHelper
 ) {
     val context = LocalContext.current
+    val currentLanguage by LanguageManager.getInstance(context).currentLanguage.collectAsState()
+    val isHindi = currentLanguage == AppLanguage.HINDI
+
     val df = remember { DecimalFormat("#,##,##0.#") }
     val dfPercent = remember { DecimalFormat("#0.0") }
 
@@ -70,15 +69,21 @@ fun RoiCalculatorScreen(
             emptyList<Crop>()
         }
     }
-    val cropNames = remember(dbCrops) {
+    val cropNames = remember(dbCrops, isHindi) {
         if (dbCrops.isNotEmpty()) {
-            dbCrops.map { it.nameHi }
+            dbCrops.map { if (isHindi) it.nameHi else it.nameEn }
         } else {
-            listOf("गेहूं (Wheat)", "धान (Rice)", "कपास (Cotton)", "मक्का (Maize)", "सरसों (Mustard)", "सोयाबीन (Soybean)", "चना (Chickpea)", "टमाटर (Tomato)", "आलू (Potato)", "प्याज (Onion)")
+            if (isHindi) {
+                listOf("गेहूं", "धान (चावल)", "कपास", "मक्का", "सरसों", "सोयाबीन", "चना", "टमाटर", "आलू", "प्याज")
+            } else {
+                listOf("Wheat", "Rice (Paddy)", "Cotton", "Maize", "Mustard", "Soybean", "Chickpea", "Tomato", "Potato", "Onion")
+            }
         }
     }
 
-    var selectedCrop by remember { mutableStateOf(cropNames.firstOrNull() ?: "गेहूं (Wheat)") }
+    var selectedCrop by remember(isHindi) {
+        mutableStateOf(cropNames.firstOrNull() ?: (if (isHindi) "गेहूं" else "Wheat"))
+    }
     var isCropDropdownExpanded by remember { mutableStateOf(false) }
 
     // 2. Land Details
@@ -91,7 +96,7 @@ fun RoiCalculatorScreen(
     var seedCostInput by remember { mutableStateOf("5000") }
     var fertilizerCostInput by remember { mutableStateOf("8000") }
     var protectionCostInput by remember { mutableStateOf("3500") }
-    
+
     // Labour
     var numLabourersInput by remember { mutableStateOf("4") }
     var labourDaysInput by remember { mutableStateOf("5") }
@@ -104,7 +109,7 @@ fun RoiCalculatorScreen(
 
     // 4. Yield & Price
     var expectedYieldInput by remember { mutableStateOf("75") } // e.g. 75 Quintals
-    var yieldUnit by remember { mutableStateOf("कुंतल (Quintal)") }
+    val yieldUnit = if (isHindi) "कुंतल" else "Quintal"
     var expectedPriceInput by remember { mutableStateOf("2275") } // e.g. ₹2275 / Quintal
 
     // What-if Sensitivity Factors
@@ -129,7 +134,7 @@ fun RoiCalculatorScreen(
     val seedCost = seedCostInput.toDoubleOrNull() ?: 0.0
     val fertilizerCost = fertilizerCostInput.toDoubleOrNull() ?: 0.0
     val protectionCost = protectionCostInput.toDoubleOrNull() ?: 0.0
-    
+
     val numLabourers = numLabourersInput.toDoubleOrNull() ?: 0.0
     val labourDays = labourDaysInput.toDoubleOrNull() ?: 0.0
     val dailyWage = dailyWageInput.toDoubleOrNull() ?: 0.0
@@ -199,13 +204,16 @@ fun RoiCalculatorScreen(
                 Spacer(modifier = Modifier.width(14.dp))
                 Column {
                     Text(
-                        text = "फसल निवेश व लाभ कैलकुलेटर",
+                        text = if (isHindi) "फसल निवेश व लाभ कैलकुलेटर" else "Crop Investment & ROI Calculator",
                         fontSize = 17.sp,
                         fontWeight = FontWeight.Bold,
                         color = TextPrimary
                     )
                     Text(
-                        text = "बीज, खाद, मजदूर व सिंचाई से कुल मुनाफा एवं ब्रेक-इवन निकालें",
+                        text = if (isHindi)
+                            "बीज, खाद, मजदूर व सिंचाई से कुल मुनाफा एवं ब्रेक-इवन निकालें"
+                        else
+                            "Calculate total costs, profit/loss & break-even selling price",
                         fontSize = 12.sp,
                         color = TextSecondary
                     )
@@ -224,7 +232,12 @@ fun RoiCalculatorScreen(
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Icon(imageVector = Icons.Default.Grass, contentDescription = null, tint = GreenPrimary, modifier = Modifier.size(20.dp))
                     Spacer(modifier = Modifier.width(8.dp))
-                    Text(text = "1. फसल एवं भूमि विवरण (Crop & Land)", fontWeight = FontWeight.Bold, fontSize = 15.sp, color = GreenPrimary)
+                    Text(
+                        text = if (isHindi) "1. फसल एवं भूमि विवरण" else "1. Crop & Land Setup",
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 15.sp,
+                        color = GreenPrimary
+                    )
                 }
 
                 Spacer(modifier = Modifier.height(12.dp))
@@ -238,7 +251,7 @@ fun RoiCalculatorScreen(
                         value = selectedCrop,
                         onValueChange = {},
                         readOnly = true,
-                        label = { Text("फसल चुनें (Select Crop)") },
+                        label = { Text(if (isHindi) "फसल चुनें" else "Select Crop") },
                         trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = isCropDropdownExpanded) },
                         modifier = Modifier
                             .fillMaxWidth()
@@ -272,7 +285,7 @@ fun RoiCalculatorScreen(
                     OutlinedTextField(
                         value = areaInput,
                         onValueChange = { areaInput = it },
-                        label = { Text("कुल क्षेत्रफल (Area)") },
+                        label = { Text(if (isHindi) "कुल क्षेत्रफल" else "Total Area") },
                         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                         modifier = Modifier.weight(1f),
                         shape = RoundedCornerShape(12.dp)
@@ -281,12 +294,12 @@ fun RoiCalculatorScreen(
                     FilterChip(
                         selected = !isHectares,
                         onClick = { isHectares = false },
-                        label = { Text("एकड़ (Acres)") }
+                        label = { Text(if (isHindi) "एकड़" else "Acres") }
                     )
                     FilterChip(
                         selected = isHectares,
                         onClick = { isHectares = true },
-                        label = { Text("हेक्टेयर") }
+                        label = { Text(if (isHindi) "हेक्टेयर" else "Hectares") }
                     )
                 }
 
@@ -301,13 +314,13 @@ fun RoiCalculatorScreen(
                     FilterChip(
                         selected = !isRentedLand,
                         onClick = { isRentedLand = false },
-                        label = { Text("खुद की जमीन (Owned)") },
+                        label = { Text(if (isHindi) "खुद की जमीन (Owned)" else "Owned Land") },
                         modifier = Modifier.weight(1f)
                     )
                     FilterChip(
                         selected = isRentedLand,
                         onClick = { isRentedLand = true },
-                        label = { Text("किराया / बटाई (Rented)") },
+                        label = { Text(if (isHindi) "किराया / बटाई (Leased)" else "Leased / Rented") },
                         modifier = Modifier.weight(1f)
                     )
                 }
@@ -317,7 +330,14 @@ fun RoiCalculatorScreen(
                 OutlinedTextField(
                     value = landRentInput,
                     onValueChange = { landRentInput = it },
-                    label = { Text(if (isRentedLand) "किराया प्रति ${if (isHectares) "हेक्टेयर" else "एकड़"} (₹)" else "भूमि अवसर लागत / अनुमानित किराया (₹ optional)") },
+                    label = {
+                        Text(
+                            if (isHindi)
+                                (if (isRentedLand) "किराया प्रति ${if (isHectares) "हेक्टेयर" else "एकड़"} (₹)" else "भूमि अवसर लागत / अनुमानित किराया (₹)")
+                            else
+                                (if (isRentedLand) "Rent per ${if (isHectares) "Hectare" else "Acre"} (₹)" else "Land Opportunity Cost / Imputed Rent (₹)")
+                        )
+                    },
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                     modifier = Modifier.fillMaxWidth(),
                     shape = RoundedCornerShape(12.dp)
@@ -343,7 +363,12 @@ fun RoiCalculatorScreen(
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         Icon(imageVector = Icons.Default.Payments, contentDescription = null, tint = AmberSecondary, modifier = Modifier.size(20.dp))
                         Spacer(modifier = Modifier.width(8.dp))
-                        Text(text = "2. खेती की लागत (Cultivation Costs)", fontWeight = FontWeight.Bold, fontSize = 15.sp, color = TextPrimary)
+                        Text(
+                            text = if (isHindi) "2. खेती की परिचालन लागत" else "2. Cultivation & Operating Costs",
+                            fontWeight = FontWeight.Bold,
+                            fontSize = 15.sp,
+                            color = TextPrimary
+                        )
                     }
                     Icon(
                         imageVector = if (isAdvancedExpensesOpen) Icons.Default.ExpandLess else Icons.Default.ExpandMore,
@@ -365,7 +390,7 @@ fun RoiCalculatorScreen(
                             OutlinedTextField(
                                 value = seedCostInput,
                                 onValueChange = { seedCostInput = it },
-                                label = { Text("बीज खर्च (Seeds ₹)") },
+                                label = { Text(if (isHindi) "बीज खर्च (Seeds ₹)" else "Seeds Cost (₹)") },
                                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                                 modifier = Modifier.weight(1f),
                                 shape = RoundedCornerShape(12.dp)
@@ -373,7 +398,7 @@ fun RoiCalculatorScreen(
                             OutlinedTextField(
                                 value = fertilizerCostInput,
                                 onValueChange = { fertilizerCostInput = it },
-                                label = { Text("खाद व उर्वरक (Fertilizer ₹)") },
+                                label = { Text(if (isHindi) "खाद व उर्वरक (₹)" else "Fertilizers (₹)") },
                                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                                 modifier = Modifier.weight(1f),
                                 shape = RoundedCornerShape(12.dp)
@@ -385,7 +410,7 @@ fun RoiCalculatorScreen(
                             OutlinedTextField(
                                 value = protectionCostInput,
                                 onValueChange = { protectionCostInput = it },
-                                label = { Text("कीटनाशक / दवाइयां (Dawa ₹)") },
+                                label = { Text(if (isHindi) "कीटनाशक व दवा (₹)" else "Crop Protection (₹)") },
                                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                                 modifier = Modifier.weight(1f),
                                 shape = RoundedCornerShape(12.dp)
@@ -393,7 +418,7 @@ fun RoiCalculatorScreen(
                             OutlinedTextField(
                                 value = irrigationCostInput,
                                 onValueChange = { irrigationCostInput = it },
-                                label = { Text("सिंचाई व डीजल (Irrigation ₹)") },
+                                label = { Text(if (isHindi) "सिंचाई व बिजली (₹)" else "Irrigation Cost (₹)") },
                                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                                 modifier = Modifier.weight(1f),
                                 shape = RoundedCornerShape(12.dp)
@@ -402,7 +427,7 @@ fun RoiCalculatorScreen(
 
                         // Labour Costs Section
                         Text(
-                            text = "मजदूरी व्यय (Labour Cost):",
+                            text = if (isHindi) "मजदूरी व्यय (Labour Costs):" else "Labour Costs Breakdown:",
                             fontSize = 13.sp,
                             fontWeight = FontWeight.SemiBold,
                             color = TextSecondary,
@@ -412,7 +437,7 @@ fun RoiCalculatorScreen(
                             OutlinedTextField(
                                 value = numLabourersInput,
                                 onValueChange = { numLabourersInput = it },
-                                label = { Text("मजदूर (No.)") },
+                                label = { Text(if (isHindi) "मजदूर (No.)" else "Labourers") },
                                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                                 modifier = Modifier.weight(1f),
                                 shape = RoundedCornerShape(12.dp)
@@ -420,7 +445,7 @@ fun RoiCalculatorScreen(
                             OutlinedTextField(
                                 value = labourDaysInput,
                                 onValueChange = { labourDaysInput = it },
-                                label = { Text("दिन (Days)") },
+                                label = { Text(if (isHindi) "दिन (Days)" else "Work Days") },
                                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                                 modifier = Modifier.weight(1f),
                                 shape = RoundedCornerShape(12.dp)
@@ -428,7 +453,7 @@ fun RoiCalculatorScreen(
                             OutlinedTextField(
                                 value = dailyWageInput,
                                 onValueChange = { dailyWageInput = it },
-                                label = { Text("दहाड़ी (₹/Day)") },
+                                label = { Text(if (isHindi) "दहाड़ी (₹/Day)" else "Daily Wage") },
                                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                                 modifier = Modifier.weight(1f),
                                 shape = RoundedCornerShape(12.dp)
@@ -440,7 +465,7 @@ fun RoiCalculatorScreen(
                             OutlinedTextField(
                                 value = machineryCostInput,
                                 onValueChange = { machineryCostInput = it },
-                                label = { Text("ट्रैक्टर व जुताई (Machinery ₹)") },
+                                label = { Text(if (isHindi) "ट्रैक्टर व जुताई (₹)" else "Machinery/Diesel (₹)") },
                                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                                 modifier = Modifier.weight(1f),
                                 shape = RoundedCornerShape(12.dp)
@@ -448,7 +473,7 @@ fun RoiCalculatorScreen(
                             OutlinedTextField(
                                 value = transportCostInput,
                                 onValueChange = { transportCostInput = it },
-                                label = { Text("कटाई व ढुलाई (Transport ₹)") },
+                                label = { Text(if (isHindi) "कटाई व ढुलाई (₹)" else "Harvest & Freight (₹)") },
                                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                                 modifier = Modifier.weight(1f),
                                 shape = RoundedCornerShape(12.dp)
@@ -458,7 +483,7 @@ fun RoiCalculatorScreen(
                         OutlinedTextField(
                             value = miscCostInput,
                             onValueChange = { miscCostInput = it },
-                            label = { Text("अन्य अनावृत खर्च (Misc Expenses ₹)") },
+                            label = { Text(if (isHindi) "अन्य अनावृत खर्च (Misc Expenses ₹)" else "Miscellaneous Expenses (₹)") },
                             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                             modifier = Modifier.fillMaxWidth(),
                             shape = RoundedCornerShape(12.dp)
@@ -479,7 +504,12 @@ fun RoiCalculatorScreen(
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Icon(imageVector = Icons.Default.TrendingUp, contentDescription = null, tint = Color(0xFF0288D1), modifier = Modifier.size(20.dp))
                     Spacer(modifier = Modifier.width(8.dp))
-                    Text(text = "3. अनुमानित पैदावार व बिक्री मूल्य", fontWeight = FontWeight.Bold, fontSize = 15.sp, color = Color(0xFF0288D1))
+                    Text(
+                        text = if (isHindi) "3. अनुमानित पैदावार व बिक्री मूल्य" else "3. Expected Yield & Selling Price",
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 15.sp,
+                        color = Color(0xFF0288D1)
+                    )
                 }
 
                 Spacer(modifier = Modifier.height(12.dp))
@@ -488,7 +518,7 @@ fun RoiCalculatorScreen(
                     OutlinedTextField(
                         value = expectedYieldInput,
                         onValueChange = { expectedYieldInput = it },
-                        label = { Text("कुल उपज ($yieldUnit)") },
+                        label = { Text(if (isHindi) "कुल उपज ($yieldUnit)" else "Total Yield ($yieldUnit)") },
                         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                         modifier = Modifier.weight(1f),
                         shape = RoundedCornerShape(12.dp)
@@ -496,7 +526,7 @@ fun RoiCalculatorScreen(
                     OutlinedTextField(
                         value = expectedPriceInput,
                         onValueChange = { expectedPriceInput = it },
-                        label = { Text("अनुमानित भाव (₹/$yieldUnit)") },
+                        label = { Text(if (isHindi) "अनुमानित भाव (₹/$yieldUnit)" else "Market Price (₹/$yieldUnit)") },
                         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                         modifier = Modifier.weight(1f),
                         shape = RoundedCornerShape(12.dp)
@@ -519,7 +549,7 @@ fun RoiCalculatorScreen(
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Text(
-                        text = "अनुमानित परिणाम (Financial Summary)",
+                        text = if (isHindi) "अनुमानित वित्तीय परिणाम" else "Financial ROI Summary",
                         fontWeight = FontWeight.Bold,
                         fontSize = 16.sp,
                         color = if (isProfitable) GreenDark else AlertRed
@@ -549,15 +579,22 @@ fun RoiCalculatorScreen(
                     horizontalArrangement = Arrangement.SpaceBetween
                 ) {
                     Column {
-                        Text("कुल निवेश (Total Cost)", fontSize = 12.sp, color = TextSecondary)
+                        Text(if (isHindi) "कुल निवेश लागत" else "Total Investment", fontSize = 12.sp, color = TextSecondary)
                         Text("₹${df.format(totalInvestment)}", fontSize = 17.sp, fontWeight = FontWeight.Bold, color = TextPrimary)
                     }
                     Column {
-                        Text("अनुमानित आय (Revenue)", fontSize = 12.sp, color = TextSecondary)
+                        Text(if (isHindi) "अनुमानित आय" else "Expected Revenue", fontSize = 12.sp, color = TextSecondary)
                         Text("₹${df.format(totalRevenue)}", fontSize = 17.sp, fontWeight = FontWeight.Bold, color = Color(0xFF0288D1))
                     }
                     Column {
-                        Text(if (isProfitable) "अनुमानित मुनाफा (Profit)" else "अनुमानित घाटा (Loss)", fontSize = 12.sp, color = TextSecondary)
+                        Text(
+                            if (isProfitable)
+                                (if (isHindi) "शुद्ध मुनाफा" else "Net Profit")
+                            else
+                                (if (isHindi) "शुद्ध घाटा" else "Net Loss"),
+                            fontSize = 12.sp,
+                            color = TextSecondary
+                        )
                         Text(
                             "₹${df.format(netProfit)}",
                             fontSize = 17.sp,
@@ -579,11 +616,11 @@ fun RoiCalculatorScreen(
                     horizontalArrangement = Arrangement.SpaceAround
                 ) {
                     Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                        Text("प्रति एकड़ लागत", fontSize = 11.sp, color = TextSecondary)
+                        Text(if (isHindi) "प्रति एकड़ लागत" else "Cost per Acre", fontSize = 11.sp, color = TextSecondary)
                         Text("₹${df.format(investmentPerAcre)}", fontSize = 13.sp, fontWeight = FontWeight.Bold, color = TextPrimary)
                     }
                     Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                        Text("प्रति एकड़ मुनाफा", fontSize = 11.sp, color = TextSecondary)
+                        Text(if (isHindi) "प्रति एकड़ मुनाफा" else "Profit per Acre", fontSize = 11.sp, color = TextSecondary)
                         Text("₹${df.format(profitPerAcre)}", fontSize = 13.sp, fontWeight = FontWeight.Bold, color = if (isProfitable) GreenDark else AlertRed)
                     }
                 }
@@ -601,9 +638,9 @@ fun RoiCalculatorScreen(
                         shape = RoundedCornerShape(10.dp)
                     ) {
                         Column(modifier = Modifier.padding(10.dp)) {
-                            Text("ब्रेक-इवन मूल्य (Break-even Price)", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = TextSecondary)
+                            Text(if (isHindi) "ब्रेक-इवन मूल्य" else "Break-even Price", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = TextSecondary)
                             Text("₹${df.format(breakEvenPrice)} / $yieldUnit", fontSize = 14.sp, fontWeight = FontWeight.Bold, color = AmberSecondary)
-                            Text("अपनी लागत निकालने हेतु न्यूनतम भाव", fontSize = 9.5.sp, color = TextSecondary)
+                            Text(if (isHindi) "लागत निकालने हेतु न्यूनतम भाव" else "Min price to cover cost", fontSize = 9.5.sp, color = TextSecondary)
                         }
                     }
 
@@ -613,9 +650,9 @@ fun RoiCalculatorScreen(
                         shape = RoundedCornerShape(10.dp)
                     ) {
                         Column(modifier = Modifier.padding(10.dp)) {
-                            Text("ब्रेक-इवन उपज (Break-even Yield)", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = TextSecondary)
+                            Text(if (isHindi) "ब्रेक-इवन उपज" else "Break-even Yield", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = TextSecondary)
                             Text("${dfPercent.format(breakEvenYield)} $yieldUnit", fontSize = 14.sp, fontWeight = FontWeight.Bold, color = Color(0xFF6A1B9A))
-                            Text("लागत वसूल करने हेतु न्यूनतम उपज", fontSize = 9.5.sp, color = TextSecondary)
+                            Text(if (isHindi) "लागत वसूल करने हेतु न्यूनतम उपज" else "Min yield to cover cost", fontSize = 9.5.sp, color = TextSecondary)
                         }
                     }
                 }
@@ -639,10 +676,17 @@ fun RoiCalculatorScreen(
                         )
                         Spacer(modifier = Modifier.width(10.dp))
                         Text(
-                            text = if (isProfitable)
-                                "आपकी अनुमानित आय (₹${df.format(totalRevenue)}) खेती की कुल लागत (₹${df.format(totalInvestment)}) से अधिक है। ₹${df.format(breakEvenPrice)} प्रति $yieldUnit से ऊपर मिलने पर आपको सकारात्मक मुनाफा मिलेगा।"
-                            else
-                                "आपकी अनुमानित लागत (₹${df.format(totalInvestment)}) संभावित आय से अधिक है। कृपया बीज, खाद या मजदूरी खर्च कम करने अथवा बेहतर भाव प्राप्त करने का प्रयास करें।",
+                            text = if (isHindi) {
+                                if (isProfitable)
+                                    "आपकी अनुमानित आय (₹${df.format(totalRevenue)}) खेती की कुल लागत (₹${df.format(totalInvestment)}) से अधिक है। ₹${df.format(breakEvenPrice)} प्रति $yieldUnit से ऊपर भाव मिलने पर आपको सीधा सकारात्मक मुनाफा प्राप्त होगा।"
+                                else
+                                    "आपकी अनुमानित लागत (₹${df.format(totalInvestment)}) संभावित आय से अधिक है। कृपया बीज, खाद या जुताई खर्च कम करने अथवा बेहतर मंडी भाव प्राप्त करने का प्रयास करें।"
+                            } else {
+                                if (isProfitable)
+                                    "Your projected revenue (₹${df.format(totalRevenue)}) exceeds total costs (₹${df.format(totalInvestment)}). Any selling price above ₹${df.format(breakEvenPrice)}/$yieldUnit delivers positive net returns."
+                                else
+                                    "Your total expenses (₹${df.format(totalInvestment)}) currently exceed projected income. Consider optimizing fertilizer, tillage, or targeting higher mandi prices."
+                            },
                             fontSize = 11.5.sp,
                             color = TextPrimary,
                             lineHeight = 16.sp
@@ -675,12 +719,15 @@ fun RoiCalculatorScreen(
                 ) {
                     Icon(imageVector = Icons.Default.Bookmark, contentDescription = null, modifier = Modifier.size(18.dp))
                     Spacer(modifier = Modifier.width(8.dp))
-                    Text("यह गणना सहेजें (Save Estimate)", fontWeight = FontWeight.Bold)
+                    Text(
+                        text = if (isHindi) "यह गणना सहेजें (Save Estimate)" else "Save This Estimate",
+                        fontWeight = FontWeight.Bold
+                    )
                 }
 
                 if (showSaveToast) {
                     Text(
-                        text = "✓ गणना सफलतापूर्वक सहेजी गई!",
+                        text = if (isHindi) "✓ गणना सफलतापूर्वक सहेजी गई!" else "✓ Estimate saved successfully!",
                         color = GreenDark,
                         fontSize = 11.sp,
                         fontWeight = FontWeight.Bold,
@@ -710,7 +757,12 @@ fun RoiCalculatorScreen(
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         Icon(imageVector = Icons.Default.Analytics, contentDescription = null, tint = Color(0xFF6A1B9A), modifier = Modifier.size(20.dp))
                         Spacer(modifier = Modifier.width(8.dp))
-                        Text(text = "4. 'यदि बाजार बदला तो?' (What-if Scenario)", fontWeight = FontWeight.Bold, fontSize = 15.sp, color = Color(0xFF6A1B9A))
+                        Text(
+                            text = if (isHindi) "4. 'यदि बाजार बदला तो?' (What-if Scenario)" else "4. Price & Yield Sensitivity (What-If)",
+                            fontWeight = FontWeight.Bold,
+                            fontSize = 15.sp,
+                            color = Color(0xFF6A1B9A)
+                        )
                     }
                     Icon(
                         imageVector = if (isSensitivityOpen) Icons.Default.ExpandLess else Icons.Default.ExpandMore,
@@ -724,7 +776,12 @@ fun RoiCalculatorScreen(
                     exit = shrinkVertically()
                 ) {
                     Column(modifier = Modifier.padding(top = 12.dp)) {
-                        Text("मंडी भाव में परिवर्तन (Selling Price Variance):", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = TextPrimary)
+                        Text(
+                            text = if (isHindi) "मंडी भाव में परिवर्तन (Selling Price Variance):" else "Market Price Fluctuation:",
+                            fontSize = 12.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = TextPrimary
+                        )
                         Row(
                             modifier = Modifier
                                 .fillMaxWidth()
@@ -742,7 +799,12 @@ fun RoiCalculatorScreen(
 
                         Spacer(modifier = Modifier.height(8.dp))
 
-                        Text("उपज में बदलाव (Yield Variance):", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = TextPrimary)
+                        Text(
+                            text = if (isHindi) "उपज में बदलाव (Yield Variance):" else "Yield Fluctuation:",
+                            fontSize = 12.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = TextPrimary
+                        )
                         Row(
                             modifier = Modifier
                                 .fillMaxWidth()
@@ -767,15 +829,15 @@ fun RoiCalculatorScreen(
                             horizontalArrangement = Arrangement.SpaceBetween
                         ) {
                             Column {
-                                Text("समायोजित आय", fontSize = 11.sp, color = TextSecondary)
+                                Text(if (isHindi) "समायोजित आय" else "Adjusted Revenue", fontSize = 11.sp, color = TextSecondary)
                                 Text("₹${df.format(totalRevenue)}", fontSize = 14.sp, fontWeight = FontWeight.Bold, color = Color(0xFF0288D1))
                             }
                             Column {
-                                Text("समायोजित मुनाफा", fontSize = 11.sp, color = TextSecondary)
+                                Text(if (isHindi) "समायोजित मुनाफा" else "Adjusted Profit", fontSize = 11.sp, color = TextSecondary)
                                 Text("₹${df.format(netProfit)}", fontSize = 14.sp, fontWeight = FontWeight.Bold, color = if (isProfitable) GreenPrimary else AlertRed)
                             }
                             Column {
-                                Text("समायोजित ROI", fontSize = 11.sp, color = TextSecondary)
+                                Text(if (isHindi) "समायोजित ROI" else "Adjusted ROI", fontSize = 11.sp, color = TextSecondary)
                                 Text("${dfPercent.format(roiPercent)}%", fontSize = 14.sp, fontWeight = FontWeight.Bold, color = TextPrimary)
                             }
                         }
@@ -803,7 +865,12 @@ fun RoiCalculatorScreen(
                         Row(verticalAlignment = Alignment.CenterVertically) {
                             Icon(imageVector = Icons.Default.History, contentDescription = null, tint = GreenDark, modifier = Modifier.size(20.dp))
                             Spacer(modifier = Modifier.width(8.dp))
-                            Text(text = "पिछली सहेजी गई गणनाएं (${savedEstimates.size})", fontWeight = FontWeight.Bold, fontSize = 15.sp, color = TextPrimary)
+                            Text(
+                                text = "${if (isHindi) "पिछली सहेजी गई गणनाएं" else "Previous Saved Estimates"} (${savedEstimates.size})",
+                                fontWeight = FontWeight.Bold,
+                                fontSize = 15.sp,
+                                color = TextPrimary
+                            )
                         }
                         Icon(
                             imageVector = if (isHistoryOpen) Icons.Default.ExpandLess else Icons.Default.ExpandMore,
@@ -835,7 +902,11 @@ fun RoiCalculatorScreen(
                                     ) {
                                         Column {
                                             Text(text = "${est.cropName} (${est.landAreaText})", fontWeight = FontWeight.Bold, fontSize = 13.sp)
-                                            Text(text = "निवेश: ₹${df.format(est.totalInvestment)} | तारीख: ${est.dateStr}", fontSize = 11.sp, color = TextSecondary)
+                                            Text(
+                                                text = "${if (isHindi) "निवेश: " else "Cost: "}₹${df.format(est.totalInvestment)} | ${est.dateStr}",
+                                                fontSize = 11.sp,
+                                                color = TextSecondary
+                                            )
                                         }
                                         Column(horizontalAlignment = Alignment.End) {
                                             Text(

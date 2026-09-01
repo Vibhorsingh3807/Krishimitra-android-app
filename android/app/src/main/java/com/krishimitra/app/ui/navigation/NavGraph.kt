@@ -68,6 +68,12 @@ fun KrishiNavGraph(
         composable(Screen.Sources.route) {
             SourcesScreen()
         }
+        composable(Screen.Helpline.route) {
+            HelplineScreen(onBack = { navController.popBackStack() })
+        }
+        composable(Screen.EquipmentRental.route) {
+            EquipmentRentalScreen(onBack = { navController.popBackStack() })
+        }
     }
 }
 

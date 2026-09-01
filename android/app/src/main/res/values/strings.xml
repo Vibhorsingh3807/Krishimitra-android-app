@@ -38,6 +38,15 @@
     <string name="action_crops">Crop Guide (49 Crops)</string>
     <string name="action_crops_desc">ICAR cultivation manuals for 49 Indian crops</string>
 
+    <!-- AI Helpline -->
+    <string name="helpline_title">AI Kisan Phone Helpline</string>
+    <string name="helpline_subtitle">1800-KRISHI — Live Voice Assistant on Call</string>
+    <string name="helpline_call_now">Call Helpline</string>
+    <string name="helpline_connecting">Connecting to Render Cloud Helpline…</string>
+    <string name="helpline_offline_notice">Internet required to load cloud helpline. You can also dial the toll-free number directly.</string>
+    <string name="helpline_dial_direct">Call via Phone App (1800-180-1551)</string>
+
+
 
     <!-- AI Assistant -->
     <string name="assistant_title">KrishiMitra AI Assistant</string>
@@ -86,6 +95,9 @@
 
     <string name="action_roi">Investment &amp; ROI Calculator</string>
     <string name="action_roi_desc">Calculate cultivation costs, profit/loss &amp; break-even</string>
+    <string name="action_equipment_rental">Farm Equipment Rental</string>
+    <string name="action_equipment_rental_desc">Rent tractors, harvesters &amp; machines nearby</string>
+
     <string name="roi_title">Crop Investment &amp; ROI Calculator</string>
     <!-- Common -->
     <string name="search_placeholder">Search crops, schemes, diseases…</string>

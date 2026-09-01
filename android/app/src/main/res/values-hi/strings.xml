@@ -37,6 +37,15 @@
     <string name="action_crops">फसल मार्गदर्शिका</string>
     <string name="action_crops_desc">15 प्रमुख भारतीय फसलों की उन्नत खेती के तरीके</string>
 
+    <!-- AI Helpline -->
+    <string name="helpline_title">किसान एआई फोन हेल्पलाइन</string>
+    <string name="helpline_subtitle">1800-KRISHI — कॉल पर सीधी एआई सलाह</string>
+    <string name="helpline_call_now">हेल्पलाइन कॉल करें</string>
+    <string name="helpline_connecting">क्लाउड फोन हेल्पलाइन से कनेक्ट हो रहा है…</string>
+    <string name="helpline_offline_notice">क्लाउड हेल्पलाइन हेतु इंटरनेट आवश्यक है। आप सीधे टोल-फ्री नंबर पर भी कॉल कर सकते हैं।</string>
+    <string name="helpline_dial_direct">फोन डायलर से कॉल करें (1800-180-1551)</string>
+
+
     <!-- AI Assistant -->
     <string name="assistant_title">कृषिमित्र एआई सहायक</string>
     <string name="assistant_hint">हिंदी या अंग्रेजी में कोई भी सवाल पूछें…</string>
@@ -84,6 +93,9 @@
 
     <string name="action_roi">निवेश व लाभ कैलकुलेटर</string>
     <string name="action_roi_desc">खेती की लागत, मुनाफा/घाटा व ब्रेक-इवन मूल्य की गणना</string>
+    <string name="action_equipment_rental">कृषि यंत्र किराया केंद्र</string>
+    <string name="action_equipment_rental_desc">ट्रैक्टर, रोटावेटर व मशीनें किराए पर लें या दें</string>
+
     <string name="roi_title">फसल निवेश व लाभ कैलकुलेटर</string>
     <!-- Common -->
     <string name="search_placeholder">फसल, योजना, रोग या खाद खोजें…</string>
