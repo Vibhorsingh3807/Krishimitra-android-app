@@ -1,0 +1,15 @@
+services:
+  - type: web
+    name: krishimitra-web-backend
+    env: python
+    buildCommand: pip install -r requirements.txt
+    startCommand: uvicorn app.main:app --host 0.0.0.0 --port $PORT
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.11.9
+      - key: OLLAMA_BASE_URL
+        value: https://your-ollama-host.com
+      - key: OLLAMA_MODEL
+        value: llama3:8b
+      - key: ENVIRONMENT
+        value: production

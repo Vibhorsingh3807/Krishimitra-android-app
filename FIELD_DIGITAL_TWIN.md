@@ -40,10 +40,11 @@ $$\text{REAL FIELD} \longrightarrow \text{DIGITAL TWIN} \longrightarrow \text{AN
                                │
              ┌─────────────────┴─────────────────┐
              ▼                                   ▼
-   INTERACTIVE CANVAS MAP               RULE-BASED ENGINE
-   • Tap Hit-Testing                    • Deterministic Agronomic Logic
-   • Translucent Risk Overlays          • Trend Detection (NDVI/Moisture)
-   • 60 FPS Vector Graphics             • Grounded AI Assistant Prompts
+   GOOGLE MAP-LIKE SATELLITE & CANVAS   RULE-BASED ENGINE
+   • Real Satellite Tiles (Esri/OSM)    • Deterministic Agronomic Logic
+   • GPS Current Location Auto-Center   • Trend Detection (NDVI/Moisture)
+   • Translucent Risk Overlays          • Grounded AI Assistant Prompts
+   • Tap Hit-Testing & Boundary Plot    • Dual Mode: Satellite & Vector
              │                                   │
              └─────────────────┬─────────────────┘
                                ▼
