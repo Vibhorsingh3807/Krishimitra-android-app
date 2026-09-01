@@ -99,8 +99,7 @@ data class ChatMessage(
     val isVerified: Boolean = true,
     val intent: String? = null,
     val isSpeaking: Boolean = false,
-    val tokenUsage: String? = null,
-    val attachedImageBitmap: android.graphics.Bitmap? = null
+    val tokenUsage: String? = null
 )
 
 data class WeatherInfo(

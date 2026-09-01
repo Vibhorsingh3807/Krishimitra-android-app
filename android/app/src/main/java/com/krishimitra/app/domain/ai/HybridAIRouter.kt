@@ -84,26 +84,6 @@ class HybridAIRouter(
     private val localProvider = LocalAIProvider(ragEngine, languageModel, localEngine)
     private val remoteProvider = RemoteAIProvider(apiClient)
 
-    suspend fun routeMultimodalQuery(query: String, imageBase64: String?, crop: String? = null, district: String? = null, forceLang: String? = null): ChatMessage = withContext(Dispatchers.Default) {
-        if (!imageBase64.isNullOrBlank()) {
-            val resp = apiClient.queryGeminiVisionAI(query, imageBase64)
-            if (resp != null) {
-                val ans = resp.get("answer").asString
-                val source = resp.get("source")?.asString ?: "✨ Gemini 1.5 Flash Vision AI"
-                val tokenUsage = resp.get("token_usage")?.asString
-                return@withContext ChatMessage(
-                    text = ans,
-                    isUser = false,
-                    source = source,
-                    isVerified = true,
-                    intent = "gemini_vision_ai",
-                    tokenUsage = tokenUsage
-                )
-            }
-        }
-        return@withContext routeQuery(query, crop, district, forceLang)
-    }
-
     suspend fun routeQuery(query: String, crop: String? = null, district: String? = null, forceLang: String? = null): ChatMessage = withContext(Dispatchers.Default) {
         // Evaluate local provider first (RAG + LLM + NLP/Market DB fallback)
         val localMsg = localProvider.answer(query, crop, district, forceLang)
