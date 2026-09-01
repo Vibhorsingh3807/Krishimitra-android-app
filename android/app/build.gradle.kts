@@ -74,12 +74,7 @@ dependencies {
 
     implementation("androidx.navigation:navigation-compose:2.8.5")
 
-    // CameraX for crop leaf capture
-    val cameraxVersion = "1.4.1"
-    implementation("androidx.camera:camera-core:$cameraxVersion")
-    implementation("androidx.camera:camera-camera2:$cameraxVersion")
-    implementation("androidx.camera:camera-lifecycle:$cameraxVersion")
-    implementation("androidx.camera:camera-view:$cameraxVersion")
+
 
     // Location
     implementation("com.google.android.gms:play-services-location:21.3.0")
