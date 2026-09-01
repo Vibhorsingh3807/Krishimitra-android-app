@@ -79,7 +79,9 @@ class MainActivity : ComponentActivity() {
                                    currentRoute == Screen.Loans.route ||
                                    currentRoute == Screen.Mandi.route ||
                                    currentRoute == Screen.RoiCalculator.route ||
-                                   currentRoute == Screen.Sources.route
+                                   currentRoute == Screen.Sources.route ||
+                                   currentRoute == Screen.Helpline.route ||
+                                   currentRoute == Screen.EquipmentRental.route
 
                     Scaffold(
                         modifier = Modifier.fillMaxSize(),
